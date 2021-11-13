@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/ProDevTeamOliva/project-olive-backend/issues"
   },
-  "homepage": "https://github.com/ProDevTeamOliva/project-olive-backend#readme"
+  "homepage": "https://github.com/ProDevTeamOliva/project-olive-backend#readme",
+  "devDependencies": {
+    "prettier": "2.4.1"
+  }
 }
