@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const http = require("http")
+const http = require("http");
 const expressSession = require("express-session");
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
@@ -10,23 +10,25 @@ const app = express();
 const port = process.env.PORT;
 
 const MongoStore = require("connect-mongodb-session")(expressSession);
-const mongoURI = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}`
+const mongoURI = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}`;
 const mongoStore = new MongoStore({
-    uri: mongoURI,
-    databaseName: process.env.MONGO_SESSION_DATABASE,
-    collection: "sessions"
+  uri: mongoURI,
+  databaseName: process.env.MONGO_SESSION_DATABASE,
+  collection: "sessions",
 });
 
-const server = http.createServer(app)
+const server = http.createServer(app);
 
-app.use(express.json())
+app.use(express.json());
 app.use(cookieParser());
-app.use(expressSession({
+app.use(
+  expressSession({
     secret: process.env.SESSION_SECRET,
     saveUninitialized: false,
     resave: false,
-    store: mongoStore
-}));
+    store: mongoStore,
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -38,8 +40,8 @@ passport.deserializeUser(SessionUser.deserializeUser());
 const router = require("./routes/router");
 app.use(router);
 
-require("./config/neo4jDriver")
+require("./config/neo4jDriver");
 
 server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+  console.log(`Server listening on port ${port}`);
 });
