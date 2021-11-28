@@ -65,15 +65,21 @@ router.post("/login", async (req, res) => {
   })(req, res);
 });
 
-router.post("/logout", async (req, res) => {
-  if (req.isAuthenticated()) {
-    req.logout();
-    req.session.destroy(() => {
-      return res.json({ message: "logged out" });
-    });
+router.use((req, res, next) => {
+  if(req.isAuthenticated()) {
+    return next()
+
   } else {
-    return res.status(404).json({ message: "not logged in" });
+    return res.status(401).json({message: "Unauthorized"})
   }
+})
+
+router.post("/logout", async (req, res) => {
+  req.logout();
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid")
+      return res.json({ message: "Logged out" });
+  });
 });
 
 module.exports = router;
