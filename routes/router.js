@@ -7,7 +7,7 @@ const neo4jDriver = require("../config/neo4jDriver");
 router.post("/register", async (req, res) => {
   const { nameFirst, nameLast, login, password } = req.body;
 
-  SessionUser.register({ username }, password)
+  SessionUser.register({ login }, password)
     .then(async (user) => {
       const session = neo4jDriver.session();
 
@@ -15,36 +15,31 @@ router.post("/register", async (req, res) => {
 
       await session
         .run(
-          "CREATE (a:User {nameFirst: $nameFirst, nameLast: $nameLast, username: $username, sessionUserID: $sUID}) RETURN ID(a)",
+          "CREATE (a:User {nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sUID}) RETURN ID(a)",
           { nameFirst: nameFirst,
             nameLast: nameLast,
-            username: username,
-            sUID: user._id
+            login: login,
+            sUID: user._id.toString()
           }
         )
         .subscribe({
-          onKeys: (keys) => {
-            console.log(keys);
-          },
           onNext: (record) => {
             rec = record.get("ID(a)");
-            console.log(rec);
+            
+            return res.status(201).json({
+              ...user._doc,
+              salt: undefined,
+              hash: undefined,
+            });
           },
           onCompleted: () => {
             session.close();
-            return res.send({ id: rec });
           },
           onError: (error) => {
             console.log(error);
             session.close();
           },
         });
-
-      return res.status(201).json({
-        ...user._doc,
-        salt: undefined,
-        hash: undefined,
-      });
     })
     .catch((error) => {
       const message = error.message;
