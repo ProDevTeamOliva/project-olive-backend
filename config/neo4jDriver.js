@@ -5,5 +5,13 @@ const driver = neo4j.driver(
   neo4jURL,
   neo4j.auth.basic(process.env.NEO4J_USERNAME, process.env.NEO4J_PASSWORD)
 );
+driver
+  .verifyConnectivity()
+  .then(() => {
+    console.log("Connected to Neo4J");
+  })
+  .catch((error) => {
+    console.error("Can't connect to Neo4J\n", error);
+  });
 
 module.exports = driver;
