@@ -16,16 +16,17 @@ router.post("/register", async (req, res) => {
       await session
         .run(
           "CREATE (a:User {nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sUID}) RETURN ID(a)",
-          { nameFirst: nameFirst,
+          {
+            nameFirst: nameFirst,
             nameLast: nameLast,
             login: login,
-            sUID: user._id.toString()
+            sUID: user._id.toString(),
           }
         )
         .subscribe({
           onNext: (record) => {
             rec = record.get("ID(a)");
-            
+
             return res.status(201).json({
               ...user._doc,
               salt: undefined,
