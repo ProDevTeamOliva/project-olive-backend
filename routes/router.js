@@ -13,24 +13,54 @@ router.post("/register", async (req, res) => {
       // neo4jSession.run("merge (user:User {nameFirst: $nameFirst, nameLast: $nameLast, username: $username, sessionId: $sessionId}) return user")
       //     .subscribe
 
-      return res.status(201).json({ message: "registered" });
+      return res.status(201).json({
+        ...user._doc,
+        salt: undefined,
+        hash: undefined
+      });
     })
-    .catch(() => {
-      return res.status(400).json({ message: "error while registering" });
+    .catch(error => {
+      const message = error.message
+      switch (error.name) {
+        case "UserExistsError":
+          return res.status(409).json({message});
+        
+        case "MissingUsernameError":
+        case "MissingPasswordError":
+          return res.status(422).json({message});
+
+        default:
+          return res.status(400).json({message: "error"});
+      }
+      
     });
 });
 
 router.post("/login", async (req, res) => {
-  passport.authenticate("local", (err, user, info) => {
+  passport.authenticate("local", (error, user, info) => {
 
     if (user) {
       req.login(user, () => {
-        return res.status(201).json({ message: "logged in" });
+        return res.status(201).json({
+          ...user._doc,
+          salt: undefined,
+          hash: undefined
+        });
       });
       
     } else {
-      return res.status(403).json({ message: "error logging in" });
-      
+      const message = info.message
+      switch(info.name) {
+        case undefined:
+          return res.status(422).json({message});
+
+        case "IncorrectUsernameError":
+        case "IncorrectPasswordError":
+          return res.status(403).json({message});
+
+        default:
+          return res.status(400).json({message: "error"});
+      }
     }
   })(req, res);
 });
