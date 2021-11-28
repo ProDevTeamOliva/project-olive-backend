@@ -1,13 +1,15 @@
+const {uri, db} = require("./mongoConfig")
 const mongoose = require('mongoose')
 
-const mongoURI = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}`;
-mongoose.connect(mongoURI, {
+mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  dbName: process.env.MONGO_SESSION_DATABASE
-
+  dbName: db
 }).then(() => {
     console.log("Connected to MongoDB")
+
+}).catch(error => {
+    console.error("Can't connect to MongoDB\n", error)
 })
 
 module.exports = mongoose

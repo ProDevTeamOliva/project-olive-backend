@@ -10,13 +10,7 @@ const passportLocal = require("passport-local");
 const app = express();
 const port = process.env.PORT;
 
-const MongoStore = require("connect-mongodb-session")(expressSession);
-const mongoURI = `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}`;
-const mongoStore = new MongoStore({
-  uri: mongoURI,
-  databaseName: process.env.MONGO_SESSION_DATABASE,
-  collection: "sessions",
-});
+const mongoStore = require("./config/mongoStore")
 
 const server = http.createServer(app);
 

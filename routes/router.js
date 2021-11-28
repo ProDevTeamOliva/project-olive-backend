@@ -42,7 +42,7 @@ router.post("/logout", async (req, res) => {
       return res.json({ message: "logged out" });
     });
   } else {
-    return res.status(404).json({ message: "already logged out" });
+    return res.status(404).json({ message: "not logged in" });
   }
 });
 
