@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+MSG="$1"
+
+local_branch="$(git rev-parse --abbrev-ref HEAD)"
+
+result="$(echo $local_branch | grep -Po '^PO-[0-9]+_')"
+
+if ! grep -qE "$result" "$MSG";then
+    echo "----------------------------------- ERROR -----------------------------------"
+    cat "$MSG"
+    echo "Your commit message must contain branch identifier at the beginning ($result)"
+    echo "-----------------------------------------------------------------------------"
+    exit 1
+fi
+
+exit 0
