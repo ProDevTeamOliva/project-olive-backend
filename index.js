@@ -34,7 +34,9 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 const SessionUser = require("./models/SessionUser");
-passport.use(SessionUser.createStrategy());
+passport.use(new passportLocal.Strategy({
+  usernameField: "login"
+}, SessionUser.authenticate()));
 passport.serializeUser(SessionUser.serializeUser());
 passport.deserializeUser(SessionUser.deserializeUser());
 
