@@ -1,4 +1,5 @@
 const passport = require("passport");
+const sha256 = require("sha-256");
 const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const neo4jDriver = require("../config/neo4jDriver");
@@ -6,12 +7,38 @@ const neo4jDriver = require("../config/neo4jDriver");
 router.post("/register", async (req, res) => {
   const { nameFirst, nameLast, login, password } = req.body;
 
-  SessionUser.register({ login }, password)
-    .then((user) => {
-      // const neo4jSession = neo4jDriver.session()
+  SessionUser.register({ username }, password)
+    .then(async (user) => {
+      const session = neo4jDriver.session();
 
-      // neo4jSession.run("merge (user:User {nameFirst: $nameFirst, nameLast: $nameLast, username: $username, sessionId: $sessionId}) return user")
-      //     .subscribe
+      let rec = undefined;
+
+      await session
+        .run(
+          "CREATE (a:User {nameFirst: $nameFirst, nameLast: $nameLast, username: $username, sessionUserID: $sUID}) RETURN ID(a)",
+          { nameFirst: nameFirst,
+            nameLast: nameLast,
+            username: username,
+            sUID: user._id
+          }
+        )
+        .subscribe({
+          onKeys: (keys) => {
+            console.log(keys);
+          },
+          onNext: (record) => {
+            rec = record.get("ID(a)");
+            console.log(rec);
+          },
+          onCompleted: () => {
+            session.close();
+            return res.send({ id: rec });
+          },
+          onError: (error) => {
+            console.log(error);
+            session.close();
+          },
+        });
 
       return res.status(201).json({
         ...user._doc,
