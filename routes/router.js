@@ -4,9 +4,9 @@ const SessionUser = require("../models/SessionUser");
 const neo4jDriver = require("../config/neo4jDriver");
 
 router.post("/register", async (req, res) => {
-  const { nameFirst, nameLast, username, password } = req.body;
+  const { nameFirst, nameLast, login, password } = req.body;
 
-  SessionUser.register({ username }, password)
+  SessionUser.register({ login }, password)
     .then((user) => {
       // const neo4jSession = neo4jDriver.session()
 
@@ -22,12 +22,15 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   passport.authenticate("local", (err, user, info) => {
-    if (!user && info) {
-      return res.status(403).json({ message: "error logging in" });
-    } else {
+
+    if (user) {
       req.login(user, () => {
         return res.status(201).json({ message: "logged in" });
       });
+      
+    } else {
+      return res.status(403).json({ message: "error logging in" });
+      
     }
   })(req, res);
 });

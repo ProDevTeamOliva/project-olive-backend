@@ -11,6 +11,8 @@ mongoose.connect(mongoURI, {
 
 const SessionUser = new mongoose.Schema({});
 
-SessionUser.plugin(passportLocalMongoose);
+SessionUser.plugin(passportLocalMongoose, {
+  usernameField: "login"
+});
 
 module.exports = mongoose.model("SessionUser", SessionUser);

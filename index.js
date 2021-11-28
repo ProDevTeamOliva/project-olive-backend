@@ -3,6 +3,7 @@ const express = require("express");
 const http = require("http");
 const expressSession = require("express-session");
 const cookieParser = require("cookie-parser");
+const cors = require("cors")
 const passport = require("passport");
 const passportLocal = require("passport-local");
 
@@ -19,6 +20,7 @@ const mongoStore = new MongoStore({
 
 const server = http.createServer(app);
 
+app.use(cors())
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -31,9 +33,8 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
-
 const SessionUser = require("./models/SessionUser");
-passport.use(new passportLocal.Strategy(SessionUser.authenticate()));
+passport.use(SessionUser.createStrategy());
 passport.serializeUser(SessionUser.serializeUser());
 passport.deserializeUser(SessionUser.deserializeUser());
 
