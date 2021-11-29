@@ -20,7 +20,7 @@ set -m
 
 # wait for Neo4j
 log_info "Waiting until neo4j stats at :7474 ..."
-wget --quiet --tries=10 --waitretry=2 -O /dev/null http://localhost:${NEO4J_PORT_HTTP}
+wget --quiet --tries=10 --waitretry=2 -O /dev/null http://localhost:7474
 
 if [ -d "/cyphers" ]; then
   log_info  "Deleting all relations"
@@ -32,12 +32,12 @@ if [ -d "/cyphers" ]; then
             log_info "Running cypher ${cypherFile}"
             while IFS= read -r line
             do
-                cypher-shell -u ${NEO4J_USERNAME} -p ${NEO4J_PASSWORD} -a bolt://localhost:${NEO4J_PORT_BOLT} "${line}"
+                cypher-shell -u ${NEO4J_USERNAME} -p ${NEO4J_PASSWORD} -a bolt://localhost:7687 "${line}"
             done < "$cypherFile"
         else
             log_info "Running cypher ${cypherFile}"
             contents=$(cat ${cypherFile})
-            cypher-shell -u ${NEO4J_USERNAME} -p ${NEO4J_PASSWORD} -a bolt://localhost:${NEO4J_PORT_BOLT} "${contents}"
+            cypher-shell -u ${NEO4J_USERNAME} -p ${NEO4J_PASSWORD} -a bolt://localhost:7687 "${contents}"
         fi
   done
   log_info  "Finished loading all cyphers from '/cyphers'"
