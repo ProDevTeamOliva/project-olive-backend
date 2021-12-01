@@ -25,7 +25,7 @@ router.post("/register", async (req, res) => {
             const recordFull = record.get("u");
 
             return res.status(201).json({
-              message: "apiRegisterSuccess"
+              message: "apiRegisterSuccess",
             });
           },
           onCompleted: () => {
@@ -35,7 +35,7 @@ router.post("/register", async (req, res) => {
             session.close();
             SessionUser.findByIdAndDelete(user._id.toString(), () => {
               return res.status(500).json({ message: "apiServerError" });
-            })
+            });
           },
         });
     })
@@ -60,17 +60,18 @@ router.post("/login", async (req, res) => {
     if (user) {
       req.login(user, () => {
         return res.status(201).json({
-          message: "apiLoginSuccess"
+          message: "apiLoginSuccess",
         });
       });
-    } else if(info.message === "Missing credentials") {
+    } else if (info.message === "Missing credentials") {
       return res.status(422).json({ message: "apiMissingCredentialsError" });
-
     } else {
       switch (info.name) {
         case "IncorrectUsernameError":
         case "IncorrectPasswordError":
-          return res.status(403).json({ message: "apiIncorrectCredentialsError" });
+          return res
+            .status(403)
+            .json({ message: "apiIncorrectCredentialsError" });
 
         default:
           return res.status(400).json({ message: "apiUnknownError" });
