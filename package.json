@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/ProDevTeamOliva/project-olive-backend#readme",
   "devDependencies": {
+    "nodemon": "^2.0.15",
     "prettier": "2.4.1"
   },
   "dependencies": {
@@ -30,10 +31,8 @@
     "express-session": "^1.17.2",
     "mongoose": "^6.0.13",
     "neo4j-driver": "^4.4.0",
-    "nodemon": "^2.0.15",
     "passport": "^0.5.0",
     "passport-local": "^1.0.0",
-    "passport-local-mongoose": "^6.1.0",
-    "sha-256": "^1.0.3"
+    "passport-local-mongoose": "^6.1.0"
   }
 }
