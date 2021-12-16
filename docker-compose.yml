@@ -6,8 +6,10 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-mongo}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-asdfghjkl}
+    volumes:
+      - mongo-db:/data/db
+      - mongo-configdb:/data/configdb
   neo4j:
-    image: neo4j:project-olive
     build:
       dockerfile: neo4j.Dockerfile
       context: ./docker/neo4j
@@ -20,3 +22,19 @@ services:
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-asdfghjkl}
       - NEO4J_PORT_HTTP=${NEO4J_PORT_HTTP:-7474}
       - NEO4J_PORT_BOLT=${NEO4J_PORT_BOLT:-7687}
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+      - neo4j-conf:/conf
+      - neo4j-var:/var/lib/neo4j
+      - neo4j-plugins:/plugins
+      - neo4j-cyphers:/cyphers
+volumes:
+  mongo-db:
+  mongo-configdb:
+  neo4j-data:
+  neo4j-logs:
+  neo4j-conf:
+  neo4j-var:
+  neo4j-plugins:
+  neo4j-cyphers:

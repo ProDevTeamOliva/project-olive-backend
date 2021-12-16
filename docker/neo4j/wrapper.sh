@@ -23,8 +23,8 @@ log_info "Waiting until neo4j stats at :7474 ..."
 wget --quiet --tries=10 --waitretry=2 -O /dev/null http://localhost:7474
 
 if [ -d "/cyphers" ]; then
-  log_info  "Deleting all relations"
-  cypher-shell -u ${NEO4J_USERNAME} -p ${NEO4J_PASSWORD} --format plain "MATCH (n) DETACH DELETE n"
+  # log_info  "Deleting all relations"
+  # cypher-shell -u ${NEO4J_USERNAME} -p ${NEO4J_PASSWORD} --format plain "MATCH (n) DETACH DELETE n"
 
   log_info  "Wrapper: Loading cyphers from '/cyphers'"
   for cypherFile in /cyphers/*.cql; do
