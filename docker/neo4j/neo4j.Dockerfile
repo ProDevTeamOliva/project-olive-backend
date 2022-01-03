@@ -1,4 +1,6 @@
-FROM neo4j:4.3.7
+ARG NEO4J_IMAGE
+
+FROM ${NEO4J_IMAGE}
 
 COPY ./wrapper.sh .
 
