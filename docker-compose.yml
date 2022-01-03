@@ -13,6 +13,8 @@ services:
     build:
       dockerfile: neo4j.Dockerfile
       context: ./docker/neo4j
+      args:
+        NEO4J_IMAGE: ${NEO4J_IMAGE:-neo4j:4.3.7}
     ports:
       - ${NEO4J_PORT_HTTP:-7474}:7474
       - ${NEO4J_PORT_BOLT:-7687}:7687
