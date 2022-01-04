@@ -18,8 +18,11 @@ router.get("/", async (req, res) => {
             const recordFull = record.get("u");
 
             return res.status(200).json({
-                ...recordFull.properties,
-                sessionUserID: undefined
+                user: {
+                    ...recordFull.properties,
+                    sessionUserID: undefined
+                },
+                message: "apiUserDataSuccess"
             });
           },
           onCompleted: () => {
@@ -27,9 +30,45 @@ router.get("/", async (req, res) => {
           },
           onError: (error) => {
             session.close();
-            SessionUser.findByIdAndDelete(user._id.toString(), () => {
-              return res.status(500).json({ message: "apiServerError" });
+            return res.status(500).json({ message: "apiServerError" });
+          },
+        });
+})
+
+router.get("/:login", async (req, res) => {
+    const login = req.params.login
+
+    const session = neo4jDriver.session();
+
+      session
+        .run(
+          "MATCH (u:User {login: $login}) RETURN u",
+          {
+            login
+          }
+        )
+        .subscribe({
+          onNext: (record) => {
+            const recordFull = record.get("u");
+
+            const properties = recordFull.properties
+            return res.status(200).json({
+                user: {
+                    nameFirst: properties.nameFirst,
+                    login: properties.login
+                },
+                message: "apiUserFoundSuccess"
             });
+          },
+          onCompleted: () => {
+            session.close();
+            if(!res.headersSent) {
+                return res.status(404).json({message: "apiUserNotFoundError"});
+            }
+          },
+          onError: (error) => {
+            session.close();
+            return res.status(500).json({ message: "apiServerError" });
           },
         });
 })
