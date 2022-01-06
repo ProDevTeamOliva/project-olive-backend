@@ -92,7 +92,7 @@ router.post("/logout", async (req, res) => {
   req.logout();
   req.session.destroy(() => {
     res.clearCookie("connect.sid");
-    return res.json({ message: "apiLogoutSuccess" });
+    return res.status(200).json({ message: "apiLogoutSuccess" });
   });
 });
 
