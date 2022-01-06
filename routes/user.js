@@ -1,14 +1,14 @@
 const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 
-router.get("/:login", async (req, res) => {
-  const login = req.params.login;
+router.get("/:id", async (req, res) => {
+  const id = req.params.id;
   let user = undefined;
 
   const session = neo4jDriver.session();
   session
-    .run("MATCH (u:User {login: $login}) RETURN u", {
-      login,
+    .run("MATCH (u:User {id: $id}) RETURN u", {
+      id,
     })
     .subscribe({
       onNext: (record) => {
@@ -33,6 +33,24 @@ router.get("/:login", async (req, res) => {
         return res.status(500).json({ message: "apiServerError" });
       },
     });
+});
+
+router.get("/:id/post", async (req, res) => {
+  const id = req.params.id;
+
+  return res.status(200).json({
+    posts: [],
+    message: "apiUserPostsSuccess",
+  });
+});
+
+router.get("/:id/picture", async (req, res) => {
+  const id = req.params.id;
+
+  return res.status(200).json({
+    pictures: [],
+    message: "apiUserPicturesSuccess",
+  });
 });
 
 router.get("/", async (req, res) => {

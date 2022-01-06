@@ -32,6 +32,8 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/friend", async (req, res) => {
+  const id = req.user._id;
+
   return res.status(200).json({
     users: [],
     message: "apiMyFriendsSuccess",
@@ -39,6 +41,8 @@ router.get("/friend", async (req, res) => {
 });
 
 router.get("/post", async (req, res) => {
+  const id = req.user._id;
+
   return res.status(200).json({
     posts: [],
     message: "apiMyPostsSuccess",
@@ -46,6 +50,8 @@ router.get("/post", async (req, res) => {
 });
 
 router.get("/picture", async (req, res) => {
+  const id = req.user._id;
+  
   return res.status(200).json({
     pictures: [],
     message: "apiMyPicturesSuccess",
