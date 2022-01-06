@@ -11,6 +11,7 @@ const app = express();
 const port = process.env.PORT;
 
 const mongoStore = require("./config/mongoStore");
+require("./config/neo4jDriver");
 
 const server = http.createServer(app);
 
@@ -41,8 +42,6 @@ passport.deserializeUser(SessionUser.deserializeUser());
 
 const router = require("./routes/router");
 app.use(router);
-
-require("./config/neo4jDriver");
 
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
