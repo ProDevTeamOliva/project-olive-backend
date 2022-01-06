@@ -41,4 +41,18 @@ router.get("/friend", async (req, res) => {
     });
 })
 
+router.get("/post", async (req, res) => {
+    return res.status(200).json({
+        posts: [],
+        message: "apiMyPostsSuccess"
+    });
+})
+
+router.get("/picture", async (req, res) => {
+    return res.status(200).json({
+        pictures: [],
+        message: "apiMyPicturesSuccess"
+    });
+})
+
 module.exports = router;
