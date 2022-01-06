@@ -51,7 +51,7 @@ router.get("/post", async (req, res) => {
 
 router.get("/picture", async (req, res) => {
   const id = req.user._id;
-  
+
   return res.status(200).json({
     pictures: [],
     message: "apiMyPicturesSuccess",
