@@ -5,34 +5,40 @@ router.get("/", async (req, res) => {
     const id = req.user._id
 
     const session = neo4jDriver.session();
-
-      session
-        .run(
-          "MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u",
-          {
+    session
+    .run(
+        "MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u",
+        {
             sessionUserID: id.toString()
-          }
-        )
-        .subscribe({
-          onNext: (record) => {
+        }
+    )
+    .subscribe({
+        onNext: (record) => {
             const recordFull = record.get("u");
 
+            const user = recordFull.properties
+            user.sessionUserID = undefined
+
             return res.status(200).json({
-                user: {
-                    ...recordFull.properties,
-                    sessionUserID: undefined
-                },
-                message: "apiMeDataSuccess"
+                user,
+                message: "apiMyDataSuccess"
             });
-          },
-          onCompleted: () => {
+        },
+        onCompleted: () => {
             session.close();
-          },
-          onError: (error) => {
+        },
+        onError: (error) => {
             session.close();
             return res.status(500).json({ message: "apiServerError" });
-          },
-        });
+        },
+    });
+})
+
+router.get("/friend", async (req, res) => {
+    return res.status(200).json({
+        users: [],
+        message: "apiMyFriendsSuccess"
+    });
 })
 
 module.exports = router;

@@ -9,7 +9,6 @@ router.post("/register", async (req, res) => {
   SessionUser.register({ login }, password)
     .then(async (user) => {
       const session = neo4jDriver.session();
-
       session
         .run(
           "CREATE (u:User {nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar}) RETURN u",
@@ -18,12 +17,12 @@ router.post("/register", async (req, res) => {
             nameLast,
             login: user.login,
             sessionUserID: user._id.toString(),
-            avatar: "/api/files/avatar_default.jpg"
+            avatar: "/api/file/avatar_default.jpg"
           }
         )
         .subscribe({
           onNext: (record) => {
-            const recordFull = record.get("u");
+            // const recordFull = record.get("u");
 
             return res.status(201).json({
               message: "apiRegisterSuccess",
