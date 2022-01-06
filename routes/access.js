@@ -12,12 +12,13 @@ router.post("/register", async (req, res) => {
 
       session
         .run(
-          "CREATE (u:User {nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID}) RETURN u",
+          "CREATE (u:User {nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar}) RETURN u",
           {
             nameFirst,
             nameLast,
             login: user.login,
             sessionUserID: user._id.toString(),
+            avatar: "/api/files/avatar_default.jpg"
           }
         )
         .subscribe({
