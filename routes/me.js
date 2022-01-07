@@ -37,30 +37,31 @@ router.get("/friend", async (req, res) => {
   const result = {
     friends: [],
     pendingSent: [],
-    pendingReceived: []
-  }
+    pendingReceived: [],
+  };
 
   const session = neo4jDriver.session();
   session
-    .run("MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r", {
-      sessionUserID: id.toString(),
-    })
+    .run(
+      "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r",
+      {
+        sessionUserID: id.toString(),
+      }
+    )
     .subscribe({
       onNext: (record) => {
-        const {u2, r} = record.toObject()
-        const user = u2.properties
-        user.sessionUserID = undefined
+        const { u2, r } = record.toObject();
+        const user = u2.properties;
+        user.sessionUserID = undefined;
 
-        if(r.type==="FRIEND") {
-          result.friends.push(user)
-
-        } else if (r.type==="PENDING") {
-          const u2Identity = u2.identity
-          if(r.start===u2Identity) {
-            result.pendingReceived.push(user)
-
-          } else if (r.end===u2Identity) {
-            result.pendingSent.push(user)
+        if (r.type === "FRIEND") {
+          result.friends.push(user);
+        } else if (r.type === "PENDING") {
+          const u2Identity = u2.identity;
+          if (r.start === u2Identity) {
+            result.pendingReceived.push(user);
+          } else if (r.end === u2Identity) {
+            result.pendingSent.push(user);
           }
         }
       },
