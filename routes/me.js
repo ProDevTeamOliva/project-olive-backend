@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 const { saveBase64Picture } = require("../utils/utils.js");
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 
 router.get("/", async (req, res) => {
   const id = req.user._id;
@@ -100,22 +100,25 @@ router.get("/picture", async (req, res) => {
     .run(
       "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
       {
-        sessionUserID: id.toString()
+        sessionUserID: id.toString(),
       }
     )
     .subscribe({
       onNext: (record) => {
         const pictureNode = record.get("p").properties;
 
-        pictures = [...pictures, {
-          id: pictureNode.id,
-          picture: pictureNode.picture,
-          private: pictureNode.private,
-        }]
+        pictures = [
+          ...pictures,
+          {
+            id: pictureNode.id,
+            picture: pictureNode.picture,
+            private: pictureNode.private,
+          },
+        ];
       },
       onCompleted: () => {
         session.close();
-        
+
         return res.status(200).json({
           pictures,
           message: "apiMyPicturesSuccess",
@@ -123,7 +126,7 @@ router.get("/picture", async (req, res) => {
       },
       onError: (error) => {
         session.close();
-        console.log(error)
+        console.log(error);
         return res.status(500).json({ message: "apiServerError" });
       },
     });
@@ -132,14 +135,14 @@ router.get("/picture", async (req, res) => {
 router.post("/pictures", async (req, res) => {
   const id = req.user._id;
 
-  const pictures = req.body.pictures.map(element => {
+  const pictures = req.body.pictures.map((element) => {
     const id = uuidv4();
 
     return {
       id,
       picture: `public/pictures/${id}-${element.filename}`,
       private: element.private,
-      base64: element.picture
+      base64: element.picture,
     };
   });
 
@@ -150,26 +153,26 @@ router.post("/pictures", async (req, res) => {
       "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture}) RETURN p",
       {
         sessionUserID: id.toString(),
-        pictures: pictures
+        pictures: pictures,
       }
     )
     .subscribe({
       onNext: (record) => {
         const pictureNode = record.get("p").properties;
 
-        const picture = pictures.filter(pic => pic.id === pictureNode.id)[0];
-        
+        const picture = pictures.filter((pic) => pic.id === pictureNode.id)[0];
+
         saveBase64Picture(picture.picture, picture.base64);
       },
       onCompleted: () => {
         session.close();
-        
+
         return res.status(200).json({
-          pictures: pictures.map(picture => {
+          pictures: pictures.map((picture) => {
             return {
               id: picture.id,
               picture: picture.picture,
-              private: picture.private
+              private: picture.private,
             };
           }),
           message: "apiMyPicturesSuccess",
@@ -177,7 +180,7 @@ router.post("/pictures", async (req, res) => {
       },
       onError: (error) => {
         session.close();
-        console.log(error)
+        console.log(error);
         return res.status(500).json({ message: "apiServerError" });
       },
     });
