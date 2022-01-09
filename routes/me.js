@@ -93,10 +93,43 @@ router.get("/post", async (req, res) => {
 router.get("/picture", async (req, res) => {
   const id = req.user._id;
 
-  return res.status(200).json({
-    pictures: [],
-    message: "apiMyPicturesSuccess",
-  });
+  let pictures = [];
+
+  const session = neo4jDriver.session();
+  session
+    .run(
+      "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
+      {
+        sessionUserID: id.toString(),
+      }
+    )
+    .subscribe({
+      onNext: (record) => {
+        const pictureNode = record.get("p").properties;
+
+        pictures = [
+          ...pictures,
+          {
+            id: pictureNode.id,
+            picture: pictureNode.picture,
+            private: pictureNode.private,
+          },
+        ];
+      },
+      onCompleted: () => {
+        session.close();
+
+        return res.status(200).json({
+          pictures,
+          message: "apiMyPicturesSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        console.log(error);
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
 });
 
 router.post("/pictures", async (req, res) => {
