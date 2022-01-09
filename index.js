@@ -6,6 +6,8 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const passport = require("passport");
 const passportLocal = require("passport-local");
+const bodyParser = require("body-parser");
+const fs = require("fs");
 
 const app = express();
 const port = process.env.PORT;
@@ -15,9 +17,19 @@ require("./config/neo4jDriver");
 
 const server = http.createServer(app);
 
+const picturesDir = "public/pictures";
+
+if (!fs.existsSync(`./${picturesDir}`)) {
+  throw Error(
+    `No public directory. Please create ./${picturesDir} directory inside project root!`
+  );
+}
+
 app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(bodyParser.json({ limit: "5mb" }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(`/${picturesDir}`, express.static(picturesDir));
 app.use(
   expressSession({
     secret: process.env.SESSION_SECRET,

@@ -1,5 +1,7 @@
 const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
+const { saveBase64Picture } = require("../utils/utils.js");
+const { v4: uuidv4 } = require("uuid");
 
 router.get("/", async (req, res) => {
   const id = req.user._id;
@@ -95,6 +97,60 @@ router.get("/picture", async (req, res) => {
     pictures: [],
     message: "apiMyPicturesSuccess",
   });
+});
+
+router.post("/pictures", async (req, res) => {
+  const id = req.user._id;
+
+  const pictures = req.body.pictures.map((element) => {
+    const id = uuidv4();
+
+    return {
+      id,
+      picture: `public/pictures/${id}-${element.filename}`,
+      private: element.private,
+      base64: element.picture,
+    };
+  });
+
+  const session = neo4jDriver.session();
+
+  session
+    .run(
+      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture}) RETURN p",
+      {
+        sessionUserID: id.toString(),
+        pictures: pictures,
+      }
+    )
+    .subscribe({
+      onNext: (record) => {
+        const pictureNode = record.get("p").properties;
+
+        const picture = pictures.filter((pic) => pic.id === pictureNode.id)[0];
+
+        saveBase64Picture(picture.picture, picture.base64);
+      },
+      onCompleted: () => {
+        session.close();
+
+        return res.status(200).json({
+          pictures: pictures.map((picture) => {
+            return {
+              id: picture.id,
+              picture: picture.picture,
+              private: picture.private,
+            };
+          }),
+          message: "apiMyPicturesSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        console.log(error);
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
 });
 
 module.exports = router;
