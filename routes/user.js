@@ -37,11 +37,38 @@ router.get("/:id", async (req, res) => {
 
 router.get("/:id/post", async (req, res) => {
   const id = req.params.id;
+  
+  const posts = []
+  let result = false
 
-  return res.status(200).json({
-    posts: [],
-    message: "apiUserPostsSuccess",
-  });
+  const session = neo4jDriver.session();
+    session.run("MATCH (p:Post)<-[:POSTED]-(u:User{id:$id}) RETURN p, u", {id}).subscribe({
+      onNext: (record) => {
+        result = true
+        const post = record.get("p").properties;
+        const user = record.get("u").properties
+        user.sessionUserID=undefined
+
+        post.user = user
+  
+        posts.push(post);
+      },
+      onCompleted: () => {
+        session.close();
+        if(result) {
+          return res.status(200).json({
+            posts,
+            message: "apiUserPostsSuccess",
+          });
+        } else {
+          return res.status(400).json({ message: "apiUserPostsError" });
+        }
+      },
+      onError: (error) => {
+        session.close();
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
 });
 
 router.post("/:id/friend", async (req, res) => {
