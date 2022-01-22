@@ -161,7 +161,7 @@ const main = async () => {
         nameLast,
         login: userSaved.login,
         sessionUserID: userSaved._id.toString(),
-        avatar: "/api/file/avatar_default.jpg",
+        avatar: "/public/pictures/avatar_default.jpg",
       }
     );
     await session.close();
