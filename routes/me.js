@@ -99,11 +99,11 @@ router.get("/post", async (req, res) => {
         user.sessionUserID = undefined;
         post.user = user;
 
-        post.likes = record.get("l").map(l => {
-          const properties = l.properties
-          properties.sessionUserID=undefined
-          return properties
-        })
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
+        });
 
         posts.push(post);
       },
