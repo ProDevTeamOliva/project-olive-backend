@@ -196,7 +196,7 @@ router.patch("/avatar", async (req, res) => {
     id: picId,
     picture: `public/pictures/${picId}-${reqAvatar.filename}`,
     base64: reqAvatar.avatar,
-  }
+  };
 
   const session = neo4jDriver.session();
 
@@ -218,7 +218,7 @@ router.patch("/avatar", async (req, res) => {
         return res.status(200).json({
           avatar: {
             id: picId,
-            picture: `public/pictures/${picId}-${reqAvatar.filename}`
+            picture: `public/pictures/${picId}-${reqAvatar.filename}`,
           },
           message: "apiMyAvatarSuccess",
         });
