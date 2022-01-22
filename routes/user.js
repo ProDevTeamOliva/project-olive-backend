@@ -81,7 +81,7 @@ router.post("/:id/friend", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]-(u2) RETURN u1,p,u2",
+      "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1,p,u2",
       {
         sessionUserID: idSource.toString(),
         id: idTarget,
