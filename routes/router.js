@@ -7,6 +7,6 @@ const post = require("./post");
 router.use("/", access);
 router.use("/me", me);
 router.use("/user", user);
-router.use("/post", post)
+router.use("/post", post);
 
 module.exports = router;

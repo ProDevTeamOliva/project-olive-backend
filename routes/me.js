@@ -84,17 +84,22 @@ router.get("/friend", async (req, res) => {
 router.get("/post", async (req, res) => {
   const sessionUserID = req.user._id.toString();
 
-  const posts = []
+  const posts = [];
 
   const session = neo4jDriver.session();
-    session.run("MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) RETURN p, u", {sessionUserID}).subscribe({
+  session
+    .run(
+      "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) RETURN p, u",
+      { sessionUserID }
+    )
+    .subscribe({
       onNext: (record) => {
         const post = record.get("p").properties;
-        const user = record.get("u").properties
-        user.sessionUserID=undefined
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
 
-        post.user = user
-  
+        post.user = user;
+
         posts.push(post);
       },
       onCompleted: () => {
