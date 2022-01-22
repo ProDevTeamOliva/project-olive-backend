@@ -17,7 +17,7 @@ router.post("/register", async (req, res) => {
             nameLast,
             login: user.login,
             sessionUserID: user._id.toString(),
-            avatar: "/api/file/avatar_default.jpg",
+            avatar: "/public/pictures/avatar_default.png",
           }
         )
         .subscribe({

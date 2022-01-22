@@ -150,7 +150,7 @@ router.post("/pictures", async (req, res) => {
 
   session
     .run(
-      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
+      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: $picture.id, picture: $picture.picture, private: $picture.private}) RETURN p",
       {
         sessionUserID: id.toString(),
         pictures: pictures,
@@ -186,11 +186,11 @@ router.post("/pictures", async (req, res) => {
     });
 });
 
-router.post("/avatar", async (req, res) => {
+router.patch("/avatar", async (req, res) => {
   const userId = req.user._id;
   const picId = uuidv4();
 
-  const reqAvatar = req.body.avatar;
+  const reqAvatar = req.body;
 
   const avatar = {
     id: picId,
@@ -202,9 +202,9 @@ router.post("/avatar", async (req, res) => {
 
   session
     .run(
-      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: avatar.id, avatar: avatar.picture}) RETURN a",
+      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN a",
       {
-        sessionUserID: id.toString(),
+        sessionUserID: userId.toString(),
         avatar: avatar,
       }
     )
