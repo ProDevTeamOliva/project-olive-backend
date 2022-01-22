@@ -185,4 +185,40 @@ router.get("/", async (req, res) => {
   });
 });
 
+router.get("/:id/search/:value", async (req, res) => {
+  const users = [];
+  const searchValue = req.params.value.toString();
+  const id = req.params.id.toString();
+  const session = neo4jDriver.session();
+  session
+    .run(
+      "MATCH (u:User ) WHERE NOT u.id=$id AND toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue  RETURN u LIMIT 15",
+      {
+        id: id,
+        searchValue: searchValue,
+      }
+    )
+    .subscribe({
+      onNext: (record) => {
+        const recordFull = record.get("u");
+
+        const properties = recordFull.properties;
+        properties.sessionUserID = undefined;
+
+        users.push(properties);
+      },
+      onCompleted: () => {
+        session.close();
+        return res.status(200).json({
+          users,
+          message: "apiUsersSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
+});
+
 module.exports = router;
