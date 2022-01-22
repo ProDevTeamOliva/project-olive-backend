@@ -150,7 +150,7 @@ router.post("/pictures", async (req, res) => {
 
   session
     .run(
-      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture}) RETURN p",
+      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
       {
         sessionUserID: id.toString(),
         pictures: pictures,
@@ -176,6 +176,51 @@ router.post("/pictures", async (req, res) => {
             };
           }),
           message: "apiMyPicturesSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        console.log(error);
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
+});
+
+router.post("/avatar", async (req, res) => {
+  const userId = req.user._id;
+  const picId = uuidv4();
+
+  const reqAvatar = req.body.avatar;
+
+  const avatar = {
+    id: picId,
+    picture: `public/pictures/${picId}-${reqAvatar.filename}`,
+    base64: reqAvatar.avatar,
+  }
+
+  const session = neo4jDriver.session();
+
+  session
+    .run(
+      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: avatar.id, avatar: avatar.picture}) RETURN a",
+      {
+        sessionUserID: id.toString(),
+        avatar: avatar,
+      }
+    )
+    .subscribe({
+      onNext: (record) => {
+        saveBase64Picture(avatar.picture, avatar.base64);
+      },
+      onCompleted: () => {
+        session.close();
+
+        return res.status(200).json({
+          avatar: {
+            id: picId,
+            picture: `public/pictures/${picId}-${reqAvatar.filename}`
+          },
+          message: "apiMyAvatarSuccess",
         });
       },
       onError: (error) => {
