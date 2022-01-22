@@ -11,7 +11,7 @@ router.post("/register", async (req, res) => {
       const session = neo4jDriver.session();
       session
         .run(
-          "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar}) RETURN u",
+          "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
           {
             nameFirst,
             nameLast,
