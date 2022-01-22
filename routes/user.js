@@ -44,13 +44,17 @@ router.get("/:id/post", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User{id:$id}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
+      "MATCH (u:User{id:$id}) optional MATCH (p:Post)<-[:POSTED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
       { id }
     )
     .subscribe({
       onNext: (record) => {
         result = true;
-        const post = record.get("p").properties;
+        const postRecord = record.get("p")
+        if(!postRecord) {
+          return
+        }
+        const post = postRecord.properties;
         const user = record.get("u").properties;
         user.sessionUserID = undefined;
         post.user = user;
@@ -72,6 +76,56 @@ router.get("/:id/post", async (req, res) => {
           });
         } else {
           return res.status(400).json({ message: "apiUserPostsError" });
+        }
+      },
+      onError: (error) => {
+        session.close();
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
+});
+
+router.get("/:id/like", async (req, res) => {
+  const id = req.params.id;
+
+  const posts = [];
+  let result = false;
+
+  const session = neo4jDriver.session();
+  session
+    .run(
+      "MATCH (u:User{id:$id}) optional match (p:Post)<-[:LIKED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
+      { id }
+    )
+    .subscribe({
+      onNext: (record) => {
+        result = true;
+        const postRecord = record.get("p")
+        if(!postRecord) {
+          return
+        }
+        const post = postRecord.properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
+
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
+        });
+
+        posts.push(post);
+      },
+      onCompleted: () => {
+        session.close();
+        if (result) {
+          return res.status(200).json({
+            posts,
+            message: "apiUserLikedPostsSuccess",
+          });
+        } else {
+          return res.status(400).json({ message: "apiUserLikedPostsError" });
         }
       },
       onError: (error) => {
@@ -222,17 +276,17 @@ router.get("/", async (req, res) => {
   });
 });
 
-router.get("/:id/search/:value", async (req, res) => {
+router.get("/search/:value", async (req, res) => {
   const users = [];
   const searchValue = req.params.value.toString();
-  const id = req.params.id.toString();
+  const sessionUserID = req.user._id.toString();
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (u:User ) WHERE NOT u.id=$id AND toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue  RETURN u LIMIT 15",
+      "MATCH (u:User ) WHERE NOT u.sessionUserID=$sessionUserID AND toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue  RETURN u LIMIT 15",
       {
-        id: id,
-        searchValue: searchValue,
+        sessionUserID,
+        searchValue,
       }
     )
     .subscribe({
