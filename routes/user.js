@@ -50,9 +50,9 @@ router.get("/:id/post", async (req, res) => {
     .subscribe({
       onNext: (record) => {
         result = true;
-        const postRecord = record.get("p")
-        if(!postRecord) {
-          return
+        const postRecord = record.get("p");
+        if (!postRecord) {
+          return;
         }
         const post = postRecord.properties;
         const user = record.get("u").properties;
@@ -100,9 +100,9 @@ router.get("/:id/like", async (req, res) => {
     .subscribe({
       onNext: (record) => {
         result = true;
-        const postRecord = record.get("p")
-        if(!postRecord) {
-          return
+        const postRecord = record.get("p");
+        if (!postRecord) {
+          return;
         }
         const post = postRecord.properties;
         const user = record.get("u").properties;
