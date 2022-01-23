@@ -246,8 +246,8 @@ router.get("/:id/pictures", async (req, res) => {
   let pictures = [];
 
   const session = neo4jDriver.session();
-  session.run("MATCH (u:User {id: $id})-[UPLOADED]->(p: Picture) RETURN p",
-    {
+  session
+    .run("MATCH (u:User {id: $id})-[UPLOADED]->(p: Picture) RETURN p", {
       id,
     })
     .subscribe({
