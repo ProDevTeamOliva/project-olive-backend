@@ -142,7 +142,7 @@ const friends = [
 
 const main = async () => {
   await SessionUser.deleteMany();
-  mongoose.connection.collection("sessions").deleteMany()
+  mongoose.connection.collection("sessions").deleteMany();
   const session = neo4jDriver.session();
   await session.run("match (n) detach delete n");
   await session.close();
