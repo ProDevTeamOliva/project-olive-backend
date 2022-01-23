@@ -43,7 +43,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   const sessionUserID = req.user._id.toString();
 
-  const { content, tags, pictures } = req.body;
+  const { content, tags, pictures, type } = req.body;
 
   const picturesParsed = pictures.map(
     (element) => `public/pictures/${uuidv4()}-${element.filename}`
@@ -52,11 +52,12 @@ router.post("/", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "match (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, date:datetime(), pictures:$picturesParsed}) return p, u",
+      "match (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$picturesParsed}) return p, u",
       {
         content,
         sessionUserID,
         tags,
+        type,
         picturesParsed,
       }
     )
