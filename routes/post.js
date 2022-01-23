@@ -45,7 +45,9 @@ router.post("/", async (req, res) => {
 
   const { content, tags, pictures } = req.body;
 
-  const picturesParsed = pictures.map(element => `public/pictures/${uuidv4()}-${element.filename}`);
+  const picturesParsed = pictures.map(
+    (element) => `public/pictures/${uuidv4()}-${element.filename}`
+  );
 
   const session = neo4jDriver.session();
   session
@@ -55,7 +57,7 @@ router.post("/", async (req, res) => {
         content,
         sessionUserID,
         tags,
-        picturesParsed
+        picturesParsed,
       }
     )
     .subscribe({
@@ -63,7 +65,7 @@ router.post("/", async (req, res) => {
         const post = record.get("p").properties;
         const user = record.get("u").properties;
 
-        for(const [index, filePath] of picturesParsed.entries()){
+        for (const [index, filePath] of picturesParsed.entries()) {
           saveBase64Picture(filePath, pictures[index].picture);
         }
 
