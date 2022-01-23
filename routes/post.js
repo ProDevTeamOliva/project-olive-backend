@@ -1,5 +1,7 @@
 const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
+const { saveBase64Picture } = require("../utils/utils");
+const { v4: uuidv4 } = require("uuid");
 
 router.get("/", async (req, res) => {
   const posts = [];
@@ -41,22 +43,32 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   const sessionUserID = req.user._id.toString();
 
-  const { content, tags } = req.body;
+  const { content, tags, pictures } = req.body;
+
+  const picturesParsed = pictures.map(
+    (element) => `public/pictures/${uuidv4()}-${element.filename}`
+  );
 
   const session = neo4jDriver.session();
   session
     .run(
-      "match (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, date:datetime()}) return p, u",
+      "match (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, date:datetime(), pictures:$picturesParsed}) return p, u",
       {
         content,
         sessionUserID,
         tags,
+        picturesParsed,
       }
     )
     .subscribe({
       onNext: (record) => {
         const post = record.get("p").properties;
         const user = record.get("u").properties;
+
+        for (const [index, filePath] of picturesParsed.entries()) {
+          saveBase64Picture(filePath, pictures[index].picture);
+        }
+
         user.sessionUserID = undefined;
         post.user = user;
         return res.status(201).json({
