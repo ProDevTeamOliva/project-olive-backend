@@ -221,7 +221,7 @@ router.post("/pictures", async (req, res) => {
 
   session
     .run(
-      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: $picture.id, picture: $picture.picture, private: $picture.private}) RETURN p",
+      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
       {
         sessionUserID: id.toString(),
         pictures: pictures,
