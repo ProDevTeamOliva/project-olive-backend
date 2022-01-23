@@ -271,7 +271,7 @@ router.patch("/avatar", async (req, res) => {
 
   const session = neo4jDriver.session();
 
-  let user = {}
+  let user = {};
 
   session
     .run(
@@ -311,12 +311,9 @@ router.get("/avatar", async (req, res) => {
   let avatar = "";
 
   session
-    .run(
-      "MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u",
-      {
-        sessionUserID: userId.toString(),
-      }
-    )
+    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+      sessionUserID: userId.toString(),
+    })
     .subscribe({
       onNext: (record) => {
         const userData = record.get("u").properties;
