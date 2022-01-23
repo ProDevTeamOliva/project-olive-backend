@@ -46,7 +46,7 @@ router.post("/", async (req, res) => {
   const { content, tags, pictures, type } = req.body;
 
   const picturesParsed = pictures.map(
-    (element) => `public/pictures/${uuidv4()}-${element.filename}`
+    (element) => `/public/pictures/${uuidv4()}-${element.filename}`
   );
 
   const session = neo4jDriver.session();

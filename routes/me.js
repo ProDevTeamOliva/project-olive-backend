@@ -211,7 +211,7 @@ router.post("/pictures", async (req, res) => {
 
     return {
       id,
-      picture: `public/pictures/${id}-${element.filename}`,
+      picture: `/public/pictures/${id}-${element.filename}`,
       private: element.private,
       base64: element.picture,
     };
@@ -265,7 +265,7 @@ router.patch("/avatar", async (req, res) => {
 
   const avatar = {
     id: picId,
-    picture: `public/pictures/${picId}-${reqAvatar.filename}`,
+    picture: `/public/pictures/${picId}-${reqAvatar.filename}`,
     base64: reqAvatar.avatar,
   };
 
