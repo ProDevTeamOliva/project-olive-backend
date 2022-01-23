@@ -240,13 +240,34 @@ router.delete("/:id/friend", async (req, res) => {
     });
 });
 
-router.get("/:id/picture", async (req, res) => {
+router.get("/:id/pictures", async (req, res) => {
   const id = req.params.id;
 
-  return res.status(200).json({
-    pictures: [],
-    message: "apiUserPicturesSuccess",
-  });
+  let pictures = [];
+
+  const session = neo4jDriver.session();
+  session
+    .run("MATCH (u:User {id: $id})-[UPLOADED]->(p: Picture) RETURN p", {
+      id,
+    })
+    .subscribe({
+      onNext: (record) => {
+        const picture = record.get("p").properties;
+
+        pictures = [...pictures, picture];
+      },
+      onCompleted: () => {
+        session.close();
+        return res.status(200).json({
+          pictures,
+          message: "apiUserPicturesSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
 });
 
 router.get("/", async (req, res) => {
