@@ -271,9 +271,11 @@ router.patch("/avatar", async (req, res) => {
 
   const session = neo4jDriver.session();
 
+  let user = {};
+
   session
     .run(
-      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN a",
+      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
       {
         sessionUserID: userId.toString(),
         avatar: avatar,
@@ -281,16 +283,48 @@ router.patch("/avatar", async (req, res) => {
     )
     .subscribe({
       onNext: (record) => {
+        user = record.get("u").properties;
+
         saveBase64Picture(avatar.picture, avatar.base64);
       },
       onCompleted: () => {
         session.close();
 
         return res.status(200).json({
-          avatar: {
-            id: picId,
-            picture: `public/pictures/${picId}-${reqAvatar.filename}`,
-          },
+          user,
+          message: "apiMyAvatarSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        console.log(error);
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
+});
+
+router.get("/avatar", async (req, res) => {
+  const userId = req.user._id;
+
+  const session = neo4jDriver.session();
+
+  let avatar = "";
+
+  session
+    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+      sessionUserID: userId.toString(),
+    })
+    .subscribe({
+      onNext: (record) => {
+        const userData = record.get("u").properties;
+
+        avatar = userData.avatar;
+      },
+      onCompleted: () => {
+        session.close();
+
+        return res.status(200).json({
+          avatar,
           message: "apiMyAvatarSuccess",
         });
       },
