@@ -89,7 +89,7 @@ router.get("/post", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
+      "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
       { sessionUserID }
     )
     .subscribe({
