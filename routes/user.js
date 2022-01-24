@@ -240,7 +240,7 @@ router.delete("/:id/friend", async (req, res) => {
     });
 });
 
-router.get("/:id/pictures", async (req, res) => {
+router.get("/:id/picture", async (req, res) => {
   const id = req.params.id;
 
   let pictures = [];
