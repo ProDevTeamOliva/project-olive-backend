@@ -39,7 +39,46 @@ router.get("/", async (req, res) => {
       },
     });
 });
+router.get("/search/:tag", async (req, res) => {
+  const posts = [];
+  const tag = req.params.tag.toString();
 
+  const session = neo4jDriver.session();
+  session
+    .run(
+      "MATCH (p:Post)<-[:POSTED]-(u:User) WHERE $tag IN p.tags optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+      {
+        tag,
+      }
+    )
+    .subscribe({
+      onNext: (record) => {
+        const post = record.get("p").properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
+
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
+        });
+
+        posts.push(post);
+      },
+      onCompleted: () => {
+        session.close();
+        return res.status(200).json({
+          posts,
+          message: "apiPostsSuccess",
+        });
+      },
+      onError: (error) => {
+        session.close();
+        return res.status(500).json({ message: "apiServerError" });
+      },
+    });
+});
 router.post("/", async (req, res) => {
   const sessionUserID = req.user._id.toString();
 
