@@ -304,7 +304,7 @@ router.get("/search/:value", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (u:User ) WHERE NOT u.sessionUserID=$sessionUserID AND toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue  RETURN u LIMIT 15",
+      "MATCH (u:User ) WHERE (toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue) AND NOT u.sessionUserID=$sessionUserID  RETURN u LIMIT 15",
       {
         sessionUserID,
         searchValue,
