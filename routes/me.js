@@ -203,7 +203,7 @@ router.get("/picture", async (req, res) => {
     });
 });
 
-router.post("/pictures", async (req, res) => {
+router.post("/picture", async (req, res) => {
   const id = req.user._id;
 
   const pictures = req.body.pictures.map((element) => {
