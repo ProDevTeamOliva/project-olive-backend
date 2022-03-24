@@ -1,17 +1,25 @@
-const { uri, db } = require("./mongoConfig");
 const mongoose = require("mongoose");
 
+const username = process.env.MONGO_USERNAME
+const password = encodeURIComponent(process.env.MONGO_PASSWORD)
+const host = process.env.MONGO_HOST || "localhost"
+const port = process.env.MONGO_PORT || 27017
+const database = process.env.MONGO_DATABASE
+
 mongoose
-  .connect(uri, {
+  .connect(`mongodb://${username}:${password}@${host}:${port}/${database}?authSource=admin`, {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
-    dbName: db,
+    useUnifiedTopology: true
   })
-  .then(() => {
-    console.log("Connected to MongoDB");
-  })
-  .catch((error) => {
-    console.error("Can't connect to MongoDB\n", error);
-  });
+
+mongoose.connection.on("connected", () => {
+    console.log("Connected to MongoDB")
+
+}).on("error", error => {
+    console.error("Error on MongoDB connection\n", error)
+
+}).on("disconnected", () => {
+    console.log("Disconnected from MongoDB")
+})
 
 module.exports = mongoose;

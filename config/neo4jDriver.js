@@ -1,9 +1,13 @@
 const neo4j = require("neo4j-driver");
 
-const neo4jURL = `bolt://${process.env.NEO4J_HOST}:${process.env.NEO4J_PORT_BOLT}`;
+const username = process.env.NEO4J_USERNAME
+const password = process.env.NEO4J_PASSWORD
+const host = process.env.NEO4J_HOST || "localhost"
+const port = process.env.NEO4J_PORT_BOLT || 7687
+
 const driver = neo4j.driver(
-  neo4jURL,
-  neo4j.auth.basic(process.env.NEO4J_USERNAME, process.env.NEO4J_PASSWORD),
+  `bolt://${host}:${port}`,
+  neo4j.auth.basic(username, password),
   {
     disableLosslessIntegers: true,
   }
