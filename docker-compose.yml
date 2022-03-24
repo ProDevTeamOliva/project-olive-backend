@@ -1,11 +1,16 @@
 services:
   mongo:
-    image: mongo:5.0.4
+    build:
+      dockerfile: mongo.Dockerfile
+      context: ./docker/mongo
     ports:
       - ${MONGO_PORT:-27017}:27017
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-mongo}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-asdfghjkl}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_DATABASE=${MONGO_DATABASE}
     volumes:
       - mongo-db:/data/db
       - mongo-configdb:/data/configdb
@@ -19,9 +24,9 @@ services:
       - ${NEO4J_PORT_HTTP:-7474}:7474
       - ${NEO4J_PORT_BOLT:-7687}:7687
     environment:
-      - NEO4J_AUTH=${NEO4J_USERNAME:-neo4j}/${NEO4J_PASSWORD:-asdfghjkl}
-      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
-      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-asdfghjkl}
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
       - NEO4J_PORT_HTTP=${NEO4J_PORT_HTTP:-7474}
       - NEO4J_PORT_BOLT=${NEO4J_PORT_BOLT:-7687}
     volumes:

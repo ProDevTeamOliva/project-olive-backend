@@ -7,7 +7,7 @@ const port = process.env.MONGO_PORT || 27017
 const database = process.env.MONGO_DATABASE
 
 mongoose
-  .connect(`mongodb://${username}:${password}@${host}:${port}/${database}?authSource=admin`, {
+  .connect(`mongodb://${username}:${password}@${host}:${port}/${database}`, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
