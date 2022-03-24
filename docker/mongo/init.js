@@ -1,15 +1,13 @@
-database = _getEnv("MONGO_DATABASE")
+database = _getEnv("MONGO_DATABASE");
 
 db = db.getSiblingDB(database);
-db.createUser(
+db.createUser({
+  user: _getEnv("MONGO_USERNAME"),
+  pwd: _getEnv("MONGO_PASSWORD"),
+  roles: [
     {
-        user: _getEnv("MONGO_USERNAME"),
-        pwd: _getEnv("MONGO_PASSWORD"),
-        roles: [
-            {
-                role: "readWrite",
-                db: database
-            }
-        ]
-    }
-);
+      role: "readWrite",
+      db: database,
+    },
+  ],
+});
