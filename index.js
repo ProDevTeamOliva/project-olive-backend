@@ -51,12 +51,15 @@ passport.use(
 passport.serializeUser(SessionUser.serializeUser());
 passport.deserializeUser(SessionUser.deserializeUser());
 
-app.use(`/${picturesDir}`, [(req, res, next) => {
-  if(!req.isAuthenticated()) {
-    return res.redirect('/');
-  }
-  next();
-}, express.static(picturesDir)])
+app.use(`/${picturesDir}`, [
+  (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.redirect("/");
+    }
+    next();
+  },
+  express.static(picturesDir),
+]);
 
 const router = require("./routes/router");
 app.use(router);
