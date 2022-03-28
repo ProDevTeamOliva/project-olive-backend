@@ -11,16 +11,13 @@ router.post("/register", async (req, res) => {
     .then(async (user) => {
       const session = neo4jDriver.session();
       session
-        .run(
-          accessRegister,
-          {
-            nameFirst,
-            nameLast,
-            login: user.login,
-            sessionUserID: user._id.toString(),
-            avatar: "/public/pictures/avatar_default.png",
-          }
-        )
+        .run(accessRegister, {
+          nameFirst,
+          nameLast,
+          login: user.login,
+          sessionUserID: user._id.toString(),
+          avatar: "/public/pictures/avatar_default.png",
+        })
         .subscribe({
           onCompleted: () => {
             session.close();

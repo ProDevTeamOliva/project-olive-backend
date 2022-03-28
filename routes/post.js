@@ -9,45 +9,41 @@ const {
   postGetById,
   postDelete,
   postLikePost,
-  postLikeDelete
+  postLikeDelete,
 } = require("../cypher/requests");
 
 router.get("/", async (req, res) => {
   const posts = [];
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      postGet
-    )
-    .subscribe({
-      onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
+  session.run(postGet).subscribe({
+    onNext: (record) => {
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
+      posts.push(post);
+    },
+    onCompleted: () => {
+      session.close();
 
-        return res.status(200).json({
-          posts,
-          message: "apiPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      return res.status(200).json({
+        posts,
+        message: "apiPostsSuccess",
+      });
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
 
 router.get("/search/:tag", async (req, res) => {
@@ -56,12 +52,9 @@ router.get("/search/:tag", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      postSearchGet,
-      {
-        tag,
-      }
-    )
+    .run(postSearchGet, {
+      tag,
+    })
     .subscribe({
       onNext: (record) => {
         const post = record.get("p").properties;
@@ -105,19 +98,19 @@ router.post("/", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      postPost,
-      {
-        content,
-        sessionUserID,
-        tags,
-        type,
-        picturesParsed,
-      }
-    )
+    .run(postPost, {
+      content,
+      sessionUserID,
+      tags,
+      type,
+      picturesParsed,
+    })
     .subscribe({
       onNext: (record) => {
-        post = { ...record.get("p").properties, user: record.get("u").properties };
+        post = {
+          ...record.get("p").properties,
+          user: record.get("u").properties,
+        };
         post.user.sessionUserID = undefined;
 
         for (const [index, filePath] of picturesParsed.entries()) {
@@ -145,12 +138,9 @@ router.get("/:id", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      postGetById,
-      {
-        id,
-      }
-    )
+    .run(postGetById, {
+      id,
+    })
     .subscribe({
       onNext: (record) => {
         const postFound = record.get("p").properties;
@@ -190,11 +180,9 @@ router.delete("/:id", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      postDelete,
-      {
-        id,
-      })
+    .run(postDelete, {
+      id,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
@@ -224,13 +212,10 @@ router.post("/:id/like", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      postLikePost,
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(postLikePost, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
@@ -260,13 +245,10 @@ router.delete("/:id/like", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      postLikeDelete,
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(postLikeDelete, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;

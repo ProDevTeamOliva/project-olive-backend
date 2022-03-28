@@ -9,7 +9,7 @@ const {
   userFriendDelete,
   userPictureGet,
   userGet,
-  userGetByValue
+  userGetByValue,
 } = require("../cypher/requests");
 
 router.get("/:id", async (req, res) => {
@@ -18,11 +18,9 @@ router.get("/:id", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      userGetById,
-      {
-        id,
-      })
+    .run(userGetById, {
+      id,
+    })
     .subscribe({
       onNext: (record) => {
         const recordFull = record.get("u");
@@ -57,12 +55,9 @@ router.get("/:id/post", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      userGetPost,
-      {
-        id
-      }
-    )
+    .run(userGetPost, {
+      id,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
@@ -71,7 +66,10 @@ router.get("/:id/post", async (req, res) => {
         if (!postRecord) {
           return;
         }
-        const post = { ...postRecord.properties, user: record.get("u").properties };
+        const post = {
+          ...postRecord.properties,
+          user: record.get("u").properties,
+        };
         post.user.sessionUserID = undefined;
 
         post.likes = record.get("l").map((l) => {
@@ -108,46 +106,44 @@ router.get("/:id/like", async (req, res) => {
   let result = false;
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      userGetLikes,
-      { id }
-    )
-    .subscribe({
-      onNext: (record) => {
-        result = true;
+  session.run(userGetLikes, { id }).subscribe({
+    onNext: (record) => {
+      result = true;
 
-        const postRecord = record.get("p");
-        if (!postRecord) {
-          return;
-        }
-        const post = { ...postRecord.properties, user: record.get("u").properties };
-        user.sessionUserID = undefined;
+      const postRecord = record.get("p");
+      if (!postRecord) {
+        return;
+      }
+      const post = {
+        ...postRecord.properties,
+        user: record.get("u").properties,
+      };
+      user.sessionUserID = undefined;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
+
+      posts = [...posts, post];
+    },
+    onCompleted: () => {
+      session.close();
+      if (result) {
+        return res.status(200).json({
+          posts,
+          message: "apiUserLikedPostsSuccess",
         });
-
-        posts = [...posts, post];
-      },
-      onCompleted: () => {
-        session.close();
-        if (result) {
-          return res.status(200).json({
-            posts,
-            message: "apiUserLikedPostsSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiUserLikedPostsError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      } else {
+        return res.status(400).json({ message: "apiUserLikedPostsError" });
+      }
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
 
 router.post("/:id/friend", async (req, res) => {
@@ -157,13 +153,10 @@ router.post("/:id/friend", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      userFriendPost,
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(userFriendPost, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
@@ -193,13 +186,10 @@ router.post("/:id/accept", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      userAcceptPost,
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(userAcceptPost, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
@@ -229,13 +219,10 @@ router.delete("/:id/friend", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      userFriendDelete,
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(userFriendDelete, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
@@ -265,11 +252,9 @@ router.get("/:id/picture", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      userPictureGet,
-      {
-        id,
-      })
+    .run(userPictureGet, {
+      id,
+    })
     .subscribe({
       onNext: (record) => {
         pictures = [...pictures, record.get("p").properties];
@@ -293,9 +278,7 @@ router.get("/", async (req, res) => {
   let users = [];
 
   const session = neo4jDriver.session();
-  session.run(
-    userGet
-  ).subscribe({
+  session.run(userGet).subscribe({
     onNext: (record) => {
       const properties = record.get("u").properties;
       properties.sessionUserID = undefined;
@@ -323,13 +306,10 @@ router.get("/search/:value", async (req, res) => {
   const sessionUserID = req.user._id.toString();
   const session = neo4jDriver.session();
   session
-    .run(
-      userGetByValue,
-      {
-        sessionUserID,
-        searchValue,
-      }
-    )
+    .run(userGetByValue, {
+      sessionUserID,
+      searchValue,
+    })
     .subscribe({
       onNext: (record) => {
         const properties = record.get("u").properties;

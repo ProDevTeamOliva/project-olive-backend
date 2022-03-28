@@ -10,7 +10,7 @@ const {
   mePictureGet,
   mePicturePost,
   meAvatarGet,
-  meAvatarPatch
+  meAvatarPatch,
 } = require("../cypher/requests");
 
 router.get("/", async (req, res) => {
@@ -55,12 +55,9 @@ router.get("/friend", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      meFriendGet,
-      {
-        sessionUserID: id.toString(),
-      }
-    )
+    .run(meFriendGet, {
+      sessionUserID: id.toString(),
+    })
     .subscribe({
       onNext: (record) => {
         const { u2, r } = record.toObject();
@@ -100,39 +97,34 @@ router.get("/post", async (req, res) => {
   const posts = [];
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      mePostGet,
-      { sessionUserID }
-    )
-    .subscribe({
-      onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
+  session.run(mePostGet, { sessionUserID }).subscribe({
+    onNext: (record) => {
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
+      posts.push(post);
+    },
+    onCompleted: () => {
+      session.close();
 
-        return res.status(200).json({
-          posts,
-          message: "apiMyPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      return res.status(200).json({
+        posts,
+        message: "apiMyPostsSuccess",
+      });
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
 
 router.get("/like", async (req, res) => {
@@ -141,39 +133,34 @@ router.get("/like", async (req, res) => {
   const posts = [];
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      meLikeGet,
-      { sessionUserID }
-    )
-    .subscribe({
-      onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
+  session.run(meLikeGet, { sessionUserID }).subscribe({
+    onNext: (record) => {
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
+      posts.push(post);
+    },
+    onCompleted: () => {
+      session.close();
 
-        return res.status(200).json({
-          posts,
-          message: "apiMyPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      return res.status(200).json({
+        posts,
+        message: "apiMyPostsSuccess",
+      });
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
 
 router.get("/picture", async (req, res) => {
@@ -183,12 +170,9 @@ router.get("/picture", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      mePictureGet,
-      {
-        sessionUserID: id.toString(),
-      }
-    )
+    .run(mePictureGet, {
+      sessionUserID: id.toString(),
+    })
     .subscribe({
       onNext: (record) => {
         const pictureNode = record.get("p").properties;
@@ -235,13 +219,10 @@ router.post("/picture", async (req, res) => {
   const session = neo4jDriver.session();
 
   session
-    .run(
-      mePicturePost,
-      {
-        sessionUserID: id.toString(),
-        pictures: pictures,
-      }
-    )
+    .run(mePicturePost, {
+      sessionUserID: id.toString(),
+      pictures: pictures,
+    })
     .subscribe({
       onNext: (record) => {
         const pictureNode = record.get("p").properties;
@@ -289,13 +270,10 @@ router.patch("/avatar", async (req, res) => {
   let user = {};
 
   session
-    .run(
-      meAvatarPatch,
-      {
-        sessionUserID: userId.toString(),
-        avatar: avatar,
-      }
-    )
+    .run(meAvatarPatch, {
+      sessionUserID: userId.toString(),
+      avatar: avatar,
+    })
     .subscribe({
       onNext: (record) => {
         user = record.get("u").properties;
