@@ -29,7 +29,6 @@ app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(bodyParser.json({ limit: "5mb" }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(`/${picturesDir}`, express.static(picturesDir));
 app.use(
   expressSession({
     secret: process.env.SESSION_SECRET,
@@ -51,6 +50,13 @@ passport.use(
 );
 passport.serializeUser(SessionUser.serializeUser());
 passport.deserializeUser(SessionUser.deserializeUser());
+
+app.use(`/${picturesDir}`, [(req, res, next) => {
+  if(!req.isAuthenticated()) {
+    return res.redirect('/');
+  }
+  next();
+}, express.static(picturesDir)])
 
 const router = require("./routes/router");
 app.use(router);
