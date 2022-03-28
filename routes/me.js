@@ -2,29 +2,40 @@ const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 const { saveBase64Picture } = require("../utils/utils.js");
 const { v4: uuidv4 } = require("uuid");
+const {
+  meGet,
+  meFriendGet,
+  mePostGet,
+  meLikeGet,
+  mePictureGet,
+  mePicturePost,
+  meAvatarGet,
+  meAvatarPatch
+} = require("../cypher/requests");
 
 router.get("/", async (req, res) => {
   const id = req.user._id;
+  let user = undefined;
 
   const session = neo4jDriver.session();
   session
-    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+    .run(meGet, {
       sessionUserID: id.toString(),
     })
     .subscribe({
       onNext: (record) => {
         const recordFull = record.get("u");
 
-        const user = recordFull.properties;
+        user = recordFull.properties;
         user.sessionUserID = undefined;
+      },
+      onCompleted: () => {
+        session.close();
 
         return res.status(200).json({
           user,
           message: "apiMyDataSuccess",
         });
-      },
-      onCompleted: () => {
-        session.close();
       },
       onError: (error) => {
         session.close();
@@ -45,7 +56,7 @@ router.get("/friend", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r",
+      meFriendGet,
       {
         sessionUserID: id.toString(),
       }
@@ -60,6 +71,7 @@ router.get("/friend", async (req, res) => {
           result.friends.push(user);
         } else if (r.type === "PENDING") {
           const u2Identity = u2.identity;
+
           if (r.start === u2Identity) {
             result.pendingReceived.push(user);
           } else if (r.end === u2Identity) {
@@ -69,6 +81,7 @@ router.get("/friend", async (req, res) => {
       },
       onCompleted: () => {
         session.close();
+
         return res.status(200).json({
           ...result,
           message: "apiMyFriendsSuccess",
@@ -89,7 +102,7 @@ router.get("/post", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+      mePostGet,
       { sessionUserID }
     )
     .subscribe({
@@ -109,6 +122,7 @@ router.get("/post", async (req, res) => {
       },
       onCompleted: () => {
         session.close();
+
         return res.status(200).json({
           posts,
           message: "apiMyPostsSuccess",
@@ -129,7 +143,7 @@ router.get("/like", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (p:Post)<-[:LIKED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
+      meLikeGet,
       { sessionUserID }
     )
     .subscribe({
@@ -149,6 +163,7 @@ router.get("/like", async (req, res) => {
       },
       onCompleted: () => {
         session.close();
+
         return res.status(200).json({
           posts,
           message: "apiMyPostsSuccess",
@@ -169,7 +184,7 @@ router.get("/picture", async (req, res) => {
   const session = neo4jDriver.session();
   session
     .run(
-      "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
+      mePictureGet,
       {
         sessionUserID: id.toString(),
       }
@@ -221,7 +236,7 @@ router.post("/picture", async (req, res) => {
 
   session
     .run(
-      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
+      mePicturePost,
       {
         sessionUserID: id.toString(),
         pictures: pictures,
@@ -275,7 +290,7 @@ router.patch("/avatar", async (req, res) => {
 
   session
     .run(
-      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
+      meAvatarPatch,
       {
         sessionUserID: userId.toString(),
         avatar: avatar,
@@ -311,7 +326,7 @@ router.get("/avatar", async (req, res) => {
   let avatar = "";
 
   session
-    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+    .run(meAvatarGet, {
       sessionUserID: userId.toString(),
     })
     .subscribe({
