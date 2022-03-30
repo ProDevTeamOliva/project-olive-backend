@@ -51,18 +51,17 @@ passport.use(
 passport.serializeUser(SessionUser.serializeUser());
 passport.deserializeUser(SessionUser.deserializeUser());
 
+const router = require("./routes/router");
+app.use(router);
+
+const { authenticationCheck } = require("./utils/middlewares");
 app.use(`/${picturesDir}`, [
-  (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.redirect("/");
-    }
-    next();
-  },
+  authenticationCheck,
   express.static(picturesDir),
 ]);
 
-const router = require("./routes/router");
-app.use(router);
+const errorHandler = require("./utils/errorHandler");
+app.use(errorHandler)
 
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);
