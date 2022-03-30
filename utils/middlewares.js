@@ -7,8 +7,8 @@ module.exports = {
     }
     next();
   },
-  
-  wrapMiddleware: middleware => (socket, next) => {
+
+  wrapMiddleware: (middleware) => (socket, next) => {
     middleware(socket.request, {}, next);
-  }
+  },
 };

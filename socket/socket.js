@@ -4,7 +4,7 @@ const { authenticationCheck, wrapMiddleware } = require("../utils/middlewares");
 
 const authenticationCheckWrapped = wrapMiddleware(authenticationCheck);
 
-const getId = socket => socket.nsp.name.split("/")[2];
+const getId = (socket) => socket.nsp.name.split("/")[2];
 
 // SAMPLE ENDPOINT
 // ----
