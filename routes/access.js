@@ -3,91 +3,75 @@ const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const neo4jDriver = require("../config/neo4jDriver");
 const { accessRegister } = require("../cypher/requests");
+const { authenticationCheck } = require("../utils/middlewares");
+const { MissingCredentialsError } = require("../utils/errors");
 
-router.post("/register", async (req, res) => {
+router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
 
-  SessionUser.register({ login }, password)
-    .then(async (user) => {
-      const session = neo4jDriver.session();
-      session
-        .run(accessRegister, {
-          nameFirst,
-          nameLast,
-          login: user.login,
-          sessionUserID: user._id.toString(),
-          avatar: "/public/pictures/avatar_default.png",
+  SessionUser.register({ login }, password, (err, user) => {
+    if (err) {
+      err.message = `api${err.name}`;
+      return next(err);
+    }
+
+    const session = neo4jDriver.session();
+    session
+      .run(accessRegister, {
+        nameFirst,
+        nameLast,
+        login: user.login,
+        sessionUserID: user._id.toString(),
+        avatar: "/public/pictures/avatar_default.png",
+      })
+      .then(() =>
+        res.status(201).json({
+          message: "apiRegisterSuccess",
         })
-        .subscribe({
-          onCompleted: () => {
-            session.close();
-
-            return res.status(201).json({
-              message: "apiRegisterSuccess",
-            });
-          },
-          onError: (error) => {
-            session.close();
-            SessionUser.findByIdAndDelete(user._id.toString(), () => {
-              return res.status(500).json({ message: "apiServerError" });
-            });
-          },
-        });
-    })
-    .catch((error) => {
-      const message = `api${error.name}`;
-      switch (error.name) {
-        case "UserExistsError":
-          return res.status(409).json({ message });
-
-        case "MissingUsernameError":
-        case "MissingPasswordError":
-          return res.status(422).json({ message });
-
-        default:
-          return res.status(400).json({ message: "apiUnknownError" });
-      }
-    });
+      )
+      .catch((err) => {
+        SessionUser.findByIdAndDelete(user._id.toString(), () => next(err));
+      })
+      .then(() => session.close());
+  });
 });
 
-router.post("/login", async (req, res) => {
-  passport.authenticate("local", (error, user, info) => {
-    if (user) {
-      req.login(user, () => {
-        return res.status(201).json({
+router.post("/login", (req, res, next) => {
+  passport.authenticate(
+    "local",
+    {
+      badRequestMessage: new MissingCredentialsError(
+        "apiMissingCredentialsError"
+      ),
+    },
+    (err, user, info) => {
+      if (err) {
+        err.message = `api${err.name}`;
+        return next(err);
+      } else if (!user) {
+        if (info.message instanceof MissingCredentialsError) {
+          return next(info.message);
+        }
+        return next(info);
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        res.status(201).json({
           message: "apiLoginSuccess",
         });
       });
-    } else if (info.message === "Missing credentials") {
-      return res.status(422).json({ message: "apiMissingCredentialsError" });
-    } else {
-      switch (info.name) {
-        case "IncorrectUsernameError":
-        case "IncorrectPasswordError":
-          return res
-            .status(403)
-            .json({ message: "apiIncorrectCredentialsError" });
-
-        default:
-          return res.status(400).json({ message: "apiUnknownError" });
-      }
     }
-  })(req, res);
+  )(req, res, next);
 });
 
-router.use(async (req, res, next) => {
-  if (req.isAuthenticated()) {
-    return next();
-  } else {
-    return res.status(401).json({ message: "apiUnauthorizedError" });
-  }
-});
-
-router.post("/logout", async (req, res) => {
+router.post("/logout", authenticationCheck, async (req, res) => {
   req.logout();
   req.session.destroy(() => {
     res.clearCookie("connect.sid");
-    return res.status(200).json({ message: "apiLogoutSuccess" });
+    res.status(200).json({ message: "apiLogoutSuccess" });
   });
 });
 
