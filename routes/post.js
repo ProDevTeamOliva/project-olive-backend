@@ -2,55 +2,59 @@ const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 const { saveBase64Picture } = require("../utils/utils");
 const { v4: uuidv4 } = require("uuid");
+const {
+  postGet,
+  postSearchGet,
+  postPost,
+  postGetById,
+  postDelete,
+  postLikePost,
+  postLikeDelete,
+} = require("../cypher/requests");
 
 router.get("/", async (req, res) => {
   const posts = [];
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc"
-    )
-    .subscribe({
-      onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
+  session.run(postGet).subscribe({
+    onNext: (record) => {
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
-        return res.status(200).json({
-          posts,
-          message: "apiPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      posts.push(post);
+    },
+    onCompleted: () => {
+      session.close();
+
+      return res.status(200).json({
+        posts,
+        message: "apiPostsSuccess",
+      });
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
+
 router.get("/search/:tag", async (req, res) => {
   const posts = [];
   const tag = req.params.tag.toString();
 
   const session = neo4jDriver.session();
   session
-    .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User) WHERE $tag IN p.tags optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
-      {
-        tag,
-      }
-    )
+    .run(postSearchGet, {
+      tag,
+    })
     .subscribe({
       onNext: (record) => {
         const post = record.get("p").properties;
@@ -68,6 +72,7 @@ router.get("/search/:tag", async (req, res) => {
       },
       onCompleted: () => {
         session.close();
+
         return res.status(200).json({
           posts,
           message: "apiPostsSuccess",
@@ -79,6 +84,7 @@ router.get("/search/:tag", async (req, res) => {
       },
     });
 });
+
 router.post("/", async (req, res) => {
   const sessionUserID = req.user._id.toString();
 
@@ -88,36 +94,36 @@ router.post("/", async (req, res) => {
     (element) => `/public/pictures/${uuidv4()}-${element.filename}`
   );
 
+  let post = undefined;
+
   const session = neo4jDriver.session();
   session
-    .run(
-      "match (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$picturesParsed}) return p, u",
-      {
-        content,
-        sessionUserID,
-        tags,
-        type,
-        picturesParsed,
-      }
-    )
+    .run(postPost, {
+      content,
+      sessionUserID,
+      tags,
+      type,
+      picturesParsed,
+    })
     .subscribe({
       onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
+        post = {
+          ...record.get("p").properties,
+          user: record.get("u").properties,
+        };
+        post.user.sessionUserID = undefined;
 
         for (const [index, filePath] of picturesParsed.entries()) {
           saveBase64Picture(filePath, pictures[index].picture);
         }
+      },
+      onCompleted: () => {
+        session.close();
 
-        user.sessionUserID = undefined;
-        post.user = user;
         return res.status(201).json({
           message: "apiPostCreateSuccess",
           post,
         });
-      },
-      onCompleted: () => {
-        session.close();
       },
       onError: (error) => {
         session.close();
@@ -132,12 +138,9 @@ router.get("/:id", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      "MATCH (p:Post {id: $id})<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
-      {
-        id,
-      }
-    )
+    .run(postGetById, {
+      id,
+    })
     .subscribe({
       onNext: (record) => {
         const postFound = record.get("p").properties;
@@ -177,7 +180,7 @@ router.delete("/:id", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run("MATCH (p:Post {id: $id}) detach delete p RETURN p", {
+    .run(postDelete, {
       id,
     })
     .subscribe({
@@ -186,6 +189,7 @@ router.delete("/:id", async (req, res) => {
       },
       onCompleted: () => {
         session.close();
+
         if (result) {
           return res.status(200).json({
             message: "apiPostRemovedSuccess",
@@ -208,19 +212,17 @@ router.post("/:id/like", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      "MATCH (u:User{sessionUserID: $sessionUserID}) MATCH (p:Post{id: $id}) WHERE NOT exists((u)-[:LIKED]-(p)) MERGE (u)-[l:LIKED]->(p) RETURN u,l,p",
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(postLikePost, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
       },
       onCompleted: () => {
         session.close();
+
         if (result) {
           return res.status(201).json({
             message: "apiPostLikeSuccess",
@@ -243,19 +245,17 @@ router.delete("/:id/like", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      "MATCH (u:User{sessionUserID: $sessionUserID})-[r:LIKED]->(p:Post{id: $id}) DELETE r RETURN u,p",
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+    .run(postLikeDelete, {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    })
     .subscribe({
       onNext: (record) => {
         result = true;
       },
       onCompleted: () => {
         session.close();
+
         if (result) {
           return res.status(200).json({
             message: "apiPostUnlikeSuccess",

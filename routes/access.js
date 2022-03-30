@@ -2,6 +2,7 @@ const passport = require("passport");
 const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const neo4jDriver = require("../config/neo4jDriver");
+const { accessRegister } = require("../cypher/requests");
 
 router.post("/register", async (req, res) => {
   const { nameFirst, nameLast, login, password } = req.body;
@@ -10,26 +11,20 @@ router.post("/register", async (req, res) => {
     .then(async (user) => {
       const session = neo4jDriver.session();
       session
-        .run(
-          "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
-          {
-            nameFirst,
-            nameLast,
-            login: user.login,
-            sessionUserID: user._id.toString(),
-            avatar: "/public/pictures/avatar_default.png",
-          }
-        )
+        .run(accessRegister, {
+          nameFirst,
+          nameLast,
+          login: user.login,
+          sessionUserID: user._id.toString(),
+          avatar: "/public/pictures/avatar_default.png",
+        })
         .subscribe({
-          onNext: (record) => {
-            // const recordFull = record.get("u");
+          onCompleted: () => {
+            session.close();
 
             return res.status(201).json({
               message: "apiRegisterSuccess",
             });
-          },
-          onCompleted: () => {
-            session.close();
           },
           onError: (error) => {
             session.close();
@@ -95,5 +90,9 @@ router.post("/logout", async (req, res) => {
     return res.status(200).json({ message: "apiLogoutSuccess" });
   });
 });
+
+// router.get("/public/pictures/:picture", async (req, res) => {
+//   return res.status(200);
+// });
 
 module.exports = router;

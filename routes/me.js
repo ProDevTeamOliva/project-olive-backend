@@ -2,29 +2,40 @@ const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 const { saveBase64Picture } = require("../utils/utils.js");
 const { v4: uuidv4 } = require("uuid");
+const {
+  meGet,
+  meFriendGet,
+  mePostGet,
+  meLikeGet,
+  mePictureGet,
+  mePicturePost,
+  meAvatarGet,
+  meAvatarPatch,
+} = require("../cypher/requests");
 
 router.get("/", async (req, res) => {
   const id = req.user._id;
+  let user = undefined;
 
   const session = neo4jDriver.session();
   session
-    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+    .run(meGet, {
       sessionUserID: id.toString(),
     })
     .subscribe({
       onNext: (record) => {
         const recordFull = record.get("u");
 
-        const user = recordFull.properties;
+        user = recordFull.properties;
         user.sessionUserID = undefined;
+      },
+      onCompleted: () => {
+        session.close();
 
         return res.status(200).json({
           user,
           message: "apiMyDataSuccess",
         });
-      },
-      onCompleted: () => {
-        session.close();
       },
       onError: (error) => {
         session.close();
@@ -44,12 +55,9 @@ router.get("/friend", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r",
-      {
-        sessionUserID: id.toString(),
-      }
-    )
+    .run(meFriendGet, {
+      sessionUserID: id.toString(),
+    })
     .subscribe({
       onNext: (record) => {
         const { u2, r } = record.toObject();
@@ -60,6 +68,7 @@ router.get("/friend", async (req, res) => {
           result.friends.push(user);
         } else if (r.type === "PENDING") {
           const u2Identity = u2.identity;
+
           if (r.start === u2Identity) {
             result.pendingReceived.push(user);
           } else if (r.end === u2Identity) {
@@ -69,6 +78,7 @@ router.get("/friend", async (req, res) => {
       },
       onCompleted: () => {
         session.close();
+
         return res.status(200).json({
           ...result,
           message: "apiMyFriendsSuccess",
@@ -87,38 +97,34 @@ router.get("/post", async (req, res) => {
   const posts = [];
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
-      { sessionUserID }
-    )
-    .subscribe({
-      onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
+  session.run(mePostGet, { sessionUserID }).subscribe({
+    onNext: (record) => {
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
-        return res.status(200).json({
-          posts,
-          message: "apiMyPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      posts.push(post);
+    },
+    onCompleted: () => {
+      session.close();
+
+      return res.status(200).json({
+        posts,
+        message: "apiMyPostsSuccess",
+      });
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
 
 router.get("/like", async (req, res) => {
@@ -127,38 +133,34 @@ router.get("/like", async (req, res) => {
   const posts = [];
 
   const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (p:Post)<-[:LIKED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
-      { sessionUserID }
-    )
-    .subscribe({
-      onNext: (record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
+  session.run(meLikeGet, { sessionUserID }).subscribe({
+    onNext: (record) => {
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
-        return res.status(200).json({
-          posts,
-          message: "apiMyPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      posts.push(post);
+    },
+    onCompleted: () => {
+      session.close();
+
+      return res.status(200).json({
+        posts,
+        message: "apiMyPostsSuccess",
+      });
+    },
+    onError: (error) => {
+      session.close();
+      return res.status(500).json({ message: "apiServerError" });
+    },
+  });
 });
 
 router.get("/picture", async (req, res) => {
@@ -168,12 +170,9 @@ router.get("/picture", async (req, res) => {
 
   const session = neo4jDriver.session();
   session
-    .run(
-      "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
-      {
-        sessionUserID: id.toString(),
-      }
-    )
+    .run(mePictureGet, {
+      sessionUserID: id.toString(),
+    })
     .subscribe({
       onNext: (record) => {
         const pictureNode = record.get("p").properties;
@@ -220,13 +219,10 @@ router.post("/picture", async (req, res) => {
   const session = neo4jDriver.session();
 
   session
-    .run(
-      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
-      {
-        sessionUserID: id.toString(),
-        pictures: pictures,
-      }
-    )
+    .run(mePicturePost, {
+      sessionUserID: id.toString(),
+      pictures: pictures,
+    })
     .subscribe({
       onNext: (record) => {
         const pictureNode = record.get("p").properties;
@@ -274,13 +270,10 @@ router.patch("/avatar", async (req, res) => {
   let user = {};
 
   session
-    .run(
-      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
-      {
-        sessionUserID: userId.toString(),
-        avatar: avatar,
-      }
-    )
+    .run(meAvatarPatch, {
+      sessionUserID: userId.toString(),
+      avatar: avatar,
+    })
     .subscribe({
       onNext: (record) => {
         user = record.get("u").properties;
@@ -311,7 +304,7 @@ router.get("/avatar", async (req, res) => {
   let avatar = "";
 
   session
-    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+    .run(meAvatarGet, {
       sessionUserID: userId.toString(),
     })
     .subscribe({
