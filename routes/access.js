@@ -10,9 +10,9 @@ router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
 
   SessionUser.register({ login }, password, (err, user) => {
-    if(err) {
-      err.message = `api${err.name}`
-      return next(err)
+    if (err) {
+      err.message = `api${err.name}`;
+      return next(err);
     }
 
     const session = neo4jDriver.session();
@@ -24,41 +24,47 @@ router.post("/register", (req, res, next) => {
         sessionUserID: user._id.toString(),
         avatar: "/public/pictures/avatar_default.png",
       })
-      .then(() => res.status(201).json({
-        message: "apiRegisterSuccess",
-      }))
-      .catch(err => {
-        SessionUser.findByIdAndDelete(user._id.toString(), () => next(err))
+      .then(() =>
+        res.status(201).json({
+          message: "apiRegisterSuccess",
+        })
+      )
+      .catch((err) => {
+        SessionUser.findByIdAndDelete(user._id.toString(), () => next(err));
       })
-      .then(() => session.close())
-  })
+      .then(() => session.close());
+  });
 });
 
 router.post("/login", (req, res, next) => {
-  
-  passport.authenticate("local", {badRequestMessage: new MissingCredentialsError("apiMissingCredentialsError")}, (err, user, info) => {
-
-    if(err) {
-      err.message = `api${err.name}`
-      return next(err)
-    
-    } else if(!user) {
-      if(info.message instanceof MissingCredentialsError) {
-        return next(info.message)
+  passport.authenticate(
+    "local",
+    {
+      badRequestMessage: new MissingCredentialsError(
+        "apiMissingCredentialsError"
+      ),
+    },
+    (err, user, info) => {
+      if (err) {
+        err.message = `api${err.name}`;
+        return next(err);
+      } else if (!user) {
+        if (info.message instanceof MissingCredentialsError) {
+          return next(info.message);
+        }
+        return next(info);
       }
-      return next(info)
+
+      req.login(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        res.status(201).json({
+          message: "apiLoginSuccess",
+        });
+      });
     }
-
-    req.login(user, err => {
-      if(err) {
-        return next(err)
-      }
-      res.status(201).json({
-        message: "apiLoginSuccess",
-      })
-    })
-
-  })(req, res, next);
+  )(req, res, next);
 });
 
 router.post("/logout", authenticationCheck, async (req, res) => {

@@ -55,13 +55,10 @@ const router = require("./routes/router");
 app.use(router);
 
 const { authenticationCheck } = require("./utils/middlewares");
-app.use(`/${picturesDir}`, [
-  authenticationCheck,
-  express.static(picturesDir),
-]);
+app.use(`/${picturesDir}`, [authenticationCheck, express.static(picturesDir)]);
 
 const errorHandler = require("./utils/errorHandler");
-app.use(errorHandler)
+app.use(errorHandler);
 
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);

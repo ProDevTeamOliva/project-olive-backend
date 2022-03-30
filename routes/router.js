@@ -12,7 +12,7 @@ router.use("/user", authenticationCheck, user);
 router.use("/post", authenticationCheck, post);
 
 router.use((req, res, next) => {
-    next(new NotFoundError("apiRouteNotFoundError"))
-})
+  next(new NotFoundError("apiRouteNotFoundError"));
+});
 
 module.exports = router;
