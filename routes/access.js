@@ -75,8 +75,4 @@ router.post("/logout", authenticationCheck, async (req, res) => {
   });
 });
 
-// router.get("/public/pictures/:picture", async (req, res) => {
-//   return res.status(200);
-// });
-
 module.exports = router;
