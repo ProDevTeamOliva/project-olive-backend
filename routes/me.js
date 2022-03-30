@@ -13,35 +13,25 @@ const {
   meAvatarPatch,
 } = require("../cypher/requests");
 
-router.get("/", async (req, res) => {
+router.get("/", (req, res, next) => {
   const id = req.user._id;
-  let user = undefined;
 
   const session = neo4jDriver.session();
   session
     .run(meGet, {
       sessionUserID: id.toString(),
     })
-    .subscribe({
-      onNext: (record) => {
-        const recordFull = record.get("u");
+    .then(({records: [record]}) => {
+      const user = record.get(record.keys[0]).properties
+      user.sessionUserID = undefined
 
-        user = recordFull.properties;
-        user.sessionUserID = undefined;
-      },
-      onCompleted: () => {
-        session.close();
-
-        return res.status(200).json({
-          user,
-          message: "apiMyDataSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        user,
+        message: "apiMyDataSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.get("/friend", async (req, res) => {

@@ -11,40 +11,31 @@ const {
   userGet,
   userGetByValue,
 } = require("../cypher/requests");
+const { NotFoundError } = require("../utils/errors");
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", (req, res, next) => {
   const id = req.params.id;
-  let user = undefined;
 
   const session = neo4jDriver.session();
   session
     .run(userGetById, {
       id,
     })
-    .subscribe({
-      onNext: (record) => {
-        const recordFull = record.get("u");
+    .then(({records: [record]}) => {
+      if(!record) {
+        throw new NotFoundError("apiUserNotFoundError")
+      }
+      
+      const user = record.get(record.keys[0]).properties
+      user.sessionUserID = undefined
 
-        user = recordFull.properties;
-        user.sessionUserID = undefined;
-      },
-      onCompleted: () => {
-        session.close();
-
-        if (user) {
-          return res.status(200).json({
-            user,
-            message: "apiUserFoundSuccess",
-          });
-        } else {
-          return res.status(404).json({ message: "apiUserNotFoundError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        user,
+        message: "apiUserFoundSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.get("/:id/post", async (req, res) => {
