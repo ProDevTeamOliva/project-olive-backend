@@ -15,8 +15,10 @@ const createError = (name) => {
 
 const notFoundError = "NotFoundError";
 const missingCredentialsError = "MissingCredentialsError";
+const friendError = "FriendError"
 
 module.exports = {
   [notFoundError]: createError(notFoundError),
   [missingCredentialsError]: createError(missingCredentialsError),
+  [friendError]: createError(friendError)
 };

@@ -11,7 +11,7 @@ const {
   userGet,
   userGetByValue,
 } = require("../cypher/requests");
-const { NotFoundError } = require("../utils/errors");
+const { NotFoundError, FriendError } = require("../utils/errors");
 
 router.get("/:id", (req, res, next) => {
   const id = req.params.id;
@@ -137,10 +137,9 @@ router.get("/:id/like", async (req, res) => {
   });
 });
 
-router.post("/:id/friend", async (req, res) => {
+router.post("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
-  let result = false;
 
   const session = neo4jDriver.session();
   session
@@ -148,32 +147,22 @@ router.post("/:id/friend", async (req, res) => {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
-      },
-      onCompleted: () => {
-        session.close();
+    .then(({records: [record]}) => {
+      if(!record) {
+        throw new FriendError("apiFriendPendingError")
+      }
+      res.status(201).json({
+        message: "apiFriendPendingSuccess",
+      })
 
-        if (result) {
-          return res.status(201).json({
-            message: "apiFriendPendingSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiFriendPendingError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.post("/:id/accept", async (req, res) => {
+router.post("/:id/accept", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
-  let result = false;
 
   const session = neo4jDriver.session();
   session
@@ -181,32 +170,21 @@ router.post("/:id/accept", async (req, res) => {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
-      },
-      onCompleted: () => {
-        session.close();
-
-        if (result) {
-          return res.status(201).json({
-            message: "apiFriendAcceptSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiFriendAcceptError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+    .then(({records: [record]}) => {
+      if(!record) {
+        throw new FriendError("apiFriendAcceptError")
+      }
+      res.status(201).json({
+        message: "apiFriendAcceptSuccess",
+      });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.delete("/:id/friend", async (req, res) => {
+router.delete("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
-  let result = false;
 
   const session = neo4jDriver.session();
   session
@@ -214,26 +192,16 @@ router.delete("/:id/friend", async (req, res) => {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
-      },
-      onCompleted: () => {
-        session.close();
-
-        if (result) {
-          return res.status(200).json({
-            message: "apiFriendRemoveSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiFriendRemoveError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+    .then(({records: [record]}) => {
+      if(!record) {
+        throw new FriendError("apiFriendRemoveError")
+      }
+      res.status(200).json({
+        message: "apiFriendRemoveSuccess",
+      });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.get("/:id/picture", async (req, res) => {
@@ -265,34 +233,27 @@ router.get("/:id/picture", async (req, res) => {
     });
 });
 
-router.get("/", async (req, res) => {
-  let users = [];
+router.get("/", (req, res, next) => {
 
   const session = neo4jDriver.session();
-  session.run(userGet).subscribe({
-    onNext: (record) => {
-      const properties = record.get("u").properties;
-      properties.sessionUserID = undefined;
-
-      users = [...users, properties];
-    },
-    onCompleted: () => {
-      session.close();
-
-      return res.status(200).json({
+  session.run(userGet)
+    .then(({records}) => {
+      const users = records.map(record => {
+        const user = record.get(record.keys[0]).properties
+        user.sessionUserID = undefined
+        return user
+      })
+      res.status(200).json({
         users,
         message: "apiUsersSuccess",
-      });
-    },
-    onError: (error) => {
-      session.close();
-      return res.status(500).json({ message: "apiServerError" });
-    },
-  });
+      })
+
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.get("/search/:value", async (req, res) => {
-  let users = [];
+router.get("/search/:value", (req, res, next) => {
   const searchValue = req.params.value.toString();
   const sessionUserID = req.user._id.toString();
   const session = neo4jDriver.session();
@@ -301,26 +262,20 @@ router.get("/search/:value", async (req, res) => {
       sessionUserID,
       searchValue,
     })
-    .subscribe({
-      onNext: (record) => {
-        const properties = record.get("u").properties;
-        properties.sessionUserID = undefined;
+    .then(({records}) => {
+      const users = records.map(record => {
+        const user = record.get(record.keys[0]).properties
+        user.sessionUserID = undefined
+        return user
+      })
+      res.status(200).json({
+        users,
+        message: "apiUsersSuccess",
+      })
 
-        users = [...users, properties];
-      },
-      onCompleted: () => {
-        session.close();
-
-        return res.status(200).json({
-          users,
-          message: "apiUsersSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 module.exports = router;

@@ -34,28 +34,23 @@ router.get("/", (req, res, next) => {
     .then(() => session.close())
 });
 
-router.get("/friend", async (req, res) => {
+router.get("/friend", (req, res, next) => {
   const id = req.user._id;
-
-  const result = {
-    friends: [],
-    pendingSent: [],
-    pendingReceived: [],
-  };
 
   const session = neo4jDriver.session();
   session
     .run(meFriendGet, {
       sessionUserID: id.toString(),
     })
-    .subscribe({
-      onNext: (record) => {
-        const { u2, r } = record.toObject();
+    .then(({records}) => {
+      const result = records.reduce((result, record) => {
+        const {u2, r} = record.toObject()
         const user = u2.properties;
         user.sessionUserID = undefined;
 
         if (r.type === "FRIEND") {
           result.friends.push(user);
+
         } else if (r.type === "PENDING") {
           const u2Identity = u2.identity;
 
@@ -65,20 +60,22 @@ router.get("/friend", async (req, res) => {
             result.pendingSent.push(user);
           }
         }
-      },
-      onCompleted: () => {
-        session.close();
 
-        return res.status(200).json({
-          ...result,
-          message: "apiMyFriendsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+        return result
+
+      }, {
+        friends: [],
+        pendingSent: [],
+        pendingReceived: [],
+      })
+
+      res.status(200).json({
+        ...result,
+        message: "apiMyFriendsSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.get("/post", async (req, res) => {

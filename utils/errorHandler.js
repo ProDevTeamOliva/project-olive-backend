@@ -6,7 +6,7 @@ const {
   IncorrectUsernameError,
 } = require("passport-local-mongoose/lib/errors");
 const AuthenticationError = require("passport/lib/errors/authenticationerror");
-const { NotFoundError, MissingCredentialsError } = require("./errors");
+const { NotFoundError, MissingCredentialsError, FriendError } = require("./errors");
 
 module.exports = (err, req, res, next) => {
   const sendResponse = (err, code) =>
@@ -30,6 +30,11 @@ module.exports = (err, req, res, next) => {
   ) {
     err.message = "apiIncorrectCredentialsError";
     sendResponse(err, 403);
+  } else if (
+    err instanceof FriendError
+  ) {
+    sendResponse(err, 400);
+  
   } else {
     console.dir(err);
     res.status(500).json({ message: "apiUnknownError" });
