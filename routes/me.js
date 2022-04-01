@@ -78,76 +78,66 @@ router.get("/friend", (req, res, next) => {
     .then(() => session.close())
 });
 
-router.get("/post", async (req, res) => {
+router.get("/post", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
-  const posts = [];
-
   const session = neo4jDriver.session();
-  session.run(mePostGet, { sessionUserID }).subscribe({
-    onNext: (record) => {
-      const post = record.get("p").properties;
-      const user = record.get("u").properties;
-      user.sessionUserID = undefined;
-      post.user = user;
+  session.run(mePostGet, { sessionUserID })
+    .then(({records}) => {
+      const posts = records.map(record => {
 
-      post.likes = record.get("l").map((l) => {
-        const properties = l.properties;
-        properties.sessionUserID = undefined;
-        return properties;
-      });
+        const post = record.get("p").properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
 
-      posts.push(post);
-    },
-    onCompleted: () => {
-      session.close();
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
+        });
 
-      return res.status(200).json({
-        posts,
+        return post
+      })
+
+      res.status(200).json({
         message: "apiMyPostsSuccess",
+        posts
       });
-    },
-    onError: (error) => {
-      session.close();
-      return res.status(500).json({ message: "apiServerError" });
-    },
-  });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.get("/like", async (req, res) => {
+router.get("/like", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
-  const posts = [];
-
   const session = neo4jDriver.session();
-  session.run(meLikeGet, { sessionUserID }).subscribe({
-    onNext: (record) => {
-      const post = record.get("p").properties;
-      const user = record.get("u").properties;
-      user.sessionUserID = undefined;
-      post.user = user;
+  session.run(meLikeGet, { sessionUserID })
+    .then(({records}) => {
+      const posts = records.map(record => {
 
-      post.likes = record.get("l").map((l) => {
-        const properties = l.properties;
-        properties.sessionUserID = undefined;
-        return properties;
-      });
+        const post = record.get("p").properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
 
-      posts.push(post);
-    },
-    onCompleted: () => {
-      session.close();
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
+        });
 
-      return res.status(200).json({
-        posts,
+        return post
+      })
+
+      res.status(200).json({
         message: "apiMyPostsSuccess",
+        posts
       });
-    },
-    onError: (error) => {
-      session.close();
-      return res.status(500).json({ message: "apiServerError" });
-    },
-  });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.get("/picture", async (req, res) => {

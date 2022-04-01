@@ -11,52 +11,15 @@ const {
   postLikePost,
   postLikeDelete,
 } = require("../cypher/requests");
+const { PostError, NotFoundError } = require("../utils/errors");
 
-router.get("/", async (req, res) => {
-  const posts = [];
-
-  const session = neo4jDriver.session();
-  session.run(postGet).subscribe({
-    onNext: (record) => {
-      const post = record.get("p").properties;
-      const user = record.get("u").properties;
-      user.sessionUserID = undefined;
-      post.user = user;
-
-      post.likes = record.get("l").map((l) => {
-        const properties = l.properties;
-        properties.sessionUserID = undefined;
-        return properties;
-      });
-
-      posts.push(post);
-    },
-    onCompleted: () => {
-      session.close();
-
-      return res.status(200).json({
-        posts,
-        message: "apiPostsSuccess",
-      });
-    },
-    onError: (error) => {
-      session.close();
-      return res.status(500).json({ message: "apiServerError" });
-    },
-  });
-});
-
-router.get("/search/:tag", async (req, res) => {
-  const posts = [];
-  const tag = req.params.tag.toString();
+router.get("/", (req, res, next) => {
 
   const session = neo4jDriver.session();
-  session
-    .run(postSearchGet, {
-      tag,
-    })
-    .subscribe({
-      onNext: (record) => {
+  session.run(postGet)
+    .then(({records}) => {
+      const posts = records.map(record => {
+
         const post = record.get("p").properties;
         const user = record.get("u").properties;
         user.sessionUserID = undefined;
@@ -68,33 +31,60 @@ router.get("/search/:tag", async (req, res) => {
           return properties;
         });
 
-        posts.push(post);
-      },
-      onCompleted: () => {
-        session.close();
+        return post
+      })
 
-        return res.status(200).json({
-          posts,
-          message: "apiPostsSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        message: "apiPostsSuccess",
+        posts
+      });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.post("/", async (req, res) => {
+router.get("/search/:tag", (req, res, next) => {
+  const tag = req.params.tag.toString();
+
+  const session = neo4jDriver.session();
+  session
+    .run(postSearchGet, {
+      tag,
+    })
+    .then(({records}) => {
+      const posts = records.map(record => {
+
+        const post = record.get("p").properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
+
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
+        });
+
+        return post
+      })
+
+      res.status(200).json({
+        message: "apiPostsSuccess",
+        posts
+      });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
+});
+
+router.post("/", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   const { content, tags, pictures, type } = req.body;
 
-  const picturesParsed = pictures.map(
+  const picturesParsed = (pictures ?? []).map(
     (element) => `/public/pictures/${uuidv4()}-${element.filename}`
   );
-
-  let post = undefined;
 
   const session = neo4jDriver.session();
   session
@@ -105,110 +95,85 @@ router.post("/", async (req, res) => {
       type,
       picturesParsed,
     })
-    .subscribe({
-      onNext: (record) => {
-        post = {
-          ...record.get("p").properties,
-          user: record.get("u").properties,
-        };
-        post.user.sessionUserID = undefined;
+    .then(({records: [record]}) => {
 
-        for (const [index, filePath] of picturesParsed.entries()) {
-          saveBase64Picture(filePath, pictures[index].picture);
-        }
-      },
-      onCompleted: () => {
-        session.close();
+      const post = {
+        ...record.get("p").properties,
+        user: record.get("u").properties,
+      };
+      post.user.sessionUserID = undefined;
 
-        return res.status(201).json({
-          message: "apiPostCreateSuccess",
-          post,
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(400).json({ message: "apiPostCreateError" });
-      },
-    });
+      for (const [index, filePath] of picturesParsed.entries()) {
+        saveBase64Picture(filePath, pictures[index].picture);
+      }
+
+      res.status(201).json({
+        message: "apiPostCreateSuccess",
+        post,
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", (req, res, next) => {
   const id = req.params.id;
-  let post = undefined;
 
   const session = neo4jDriver.session();
   session
     .run(postGetById, {
       id,
     })
-    .subscribe({
-      onNext: (record) => {
-        const postFound = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        postFound.user = user;
+    .then(({records:[record]}) => {
+      if(!record) {
+        throw new NotFoundError("apiPostNotFoundError")
+      }
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
+      post.user = user;
 
-        postFound.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
+      post.likes = record.get("l").map((l) => {
+        const properties = l.properties;
+        properties.sessionUserID = undefined;
+        return properties;
+      });
 
-        post = postFound;
-      },
-      onCompleted: () => {
-        session.close();
-        if (post) {
-          return res.status(200).json({
-            post,
-            message: "apiPostFoundSuccess",
-          });
-        } else {
-          return res.status(404).json({ message: "apiPostNotFoundError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        post,
+        message: "apiPostFoundSuccess",
+      });
+
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", (req, res, next) => {
   const id = req.params.id;
-  let result = false;
 
   const session = neo4jDriver.session();
   session
     .run(postDelete, {
       id,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
-      },
-      onCompleted: () => {
-        session.close();
+    .then(({records:[record]}) => {
+      if(!record) {
+        throw new NotFoundError("apiPostNotFoundError")
+      }
 
-        if (result) {
-          return res.status(200).json({
-            message: "apiPostRemovedSuccess",
-          });
-        } else {
-          return res.status(404).json({ message: "apiPostRemovedError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        message: "apiPostRemovedSuccess",
+      });
+
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.post("/:id/like", async (req, res) => {
+router.post("/:id/like", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
-  let result = false;
 
   const session = neo4jDriver.session();
   session
@@ -216,32 +181,21 @@ router.post("/:id/like", async (req, res) => {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
-      },
-      onCompleted: () => {
-        session.close();
-
-        if (result) {
-          return res.status(201).json({
-            message: "apiPostLikeSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiPostLikeError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+    .then(({records: [record]}) => {
+      if(!record) {
+        throw new PostError("apiPostLikeError")
+      }
+      res.status(201).json({
+        message: "apiPostLikeSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.delete("/:id/like", async (req, res) => {
+router.delete("/:id/like", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
-  let result = false;
 
   const session = neo4jDriver.session();
   session
@@ -249,26 +203,16 @@ router.delete("/:id/like", async (req, res) => {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
-      },
-      onCompleted: () => {
-        session.close();
-
-        if (result) {
-          return res.status(200).json({
-            message: "apiPostUnlikeSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiPostUnlikeError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+    .then(({records: [record]}) => {
+      if(!record) {
+        throw new PostError("apiPostUnlikeError")
+      }
+      res.status(200).json({
+        message: "apiPostUnlikeSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 module.exports = router;

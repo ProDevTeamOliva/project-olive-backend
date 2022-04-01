@@ -38,30 +38,29 @@ router.get("/:id", (req, res, next) => {
     .then(() => session.close())
 });
 
-router.get("/:id/post", async (req, res) => {
+router.get("/:id/post", (req, res, next) => {
   const id = req.params.id;
-
-  let posts = [];
-  let result = false;
 
   const session = neo4jDriver.session();
   session
     .run(userGetPost, {
       id,
     })
-    .subscribe({
-      onNext: (record) => {
-        result = true;
+    .then(({records}) => {
+      if(!records.length){
+        throw new NotFoundError("apiUserNotFoundError")
+      }
 
-        const postRecord = record.get("p");
-        if (!postRecord) {
-          return;
+      const posts = records.reduce((result, record) => {
+        const postNode = record.get("p")
+        if(!postNode) {
+          return result
         }
-        const post = {
-          ...postRecord.properties,
-          user: record.get("u").properties,
-        };
-        post.user.sessionUserID = undefined;
+
+        const post = postNode.properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
 
         post.likes = record.get("l").map((l) => {
           const properties = l.properties;
@@ -69,72 +68,57 @@ router.get("/:id/post", async (req, res) => {
           return properties;
         });
 
-        posts = [...posts, post];
-      },
-      onCompleted: () => {
-        session.close();
+        result.push(post)
+        return result
+      }, [])
 
-        if (result) {
-          return res.status(200).json({
-            posts,
-            message: "apiUserPostsSuccess",
-          });
-        } else {
-          return res.status(400).json({ message: "apiUserPostsError" });
-        }
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        message: "apiUserPostsSuccess",
+        posts
+      });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.get("/:id/like", async (req, res) => {
+router.get("/:id/like", (req, res, next) => {
   const id = req.params.id;
 
-  let posts = [];
-  let result = false;
-
   const session = neo4jDriver.session();
-  session.run(userGetLikes, { id }).subscribe({
-    onNext: (record) => {
-      result = true;
-
-      const postRecord = record.get("p");
-      if (!postRecord) {
-        return;
+  session.run(userGetLikes, { id })
+    .then(({records}) => {
+      if(!records.length){
+        throw new NotFoundError("apiUserNotFoundError")
       }
-      const post = {
-        ...postRecord.properties,
-        user: record.get("u").properties,
-      };
-      user.sessionUserID = undefined;
 
-      post.likes = record.get("l").map((l) => {
-        const properties = l.properties;
-        properties.sessionUserID = undefined;
-        return properties;
-      });
+      const posts = records.reduce((result, record) => {
+        const postNode = record.get("p")
+        if(!postNode) {
+          return result
+        }
 
-      posts = [...posts, post];
-    },
-    onCompleted: () => {
-      session.close();
-      if (result) {
-        return res.status(200).json({
-          posts,
-          message: "apiUserLikedPostsSuccess",
+        const post = postNode.properties;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+        post.user = user;
+
+        post.likes = record.get("l").map((l) => {
+          const properties = l.properties;
+          properties.sessionUserID = undefined;
+          return properties;
         });
-      } else {
-        return res.status(400).json({ message: "apiUserLikedPostsError" });
-      }
-    },
-    onError: (error) => {
-      session.close();
-      return res.status(500).json({ message: "apiServerError" });
-    },
-  });
+
+        result.push(post)
+        return result
+      }, [])
+
+      res.status(200).json({
+        message: "apiUserLikedPostsSuccess",
+        posts
+      });
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.post("/:id/friend", (req, res, next) => {
