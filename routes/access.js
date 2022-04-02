@@ -2,7 +2,6 @@ const passport = require("passport");
 const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const neo4jDriver = require("../config/neo4jDriver");
-const { accessRegister } = require("../cypher/requests");
 const { authenticationCheck } = require("../utils/middlewares");
 const { MissingCredentialsError } = require("../utils/errors");
 
@@ -17,7 +16,7 @@ router.post("/register", (req, res, next) => {
 
     const session = neo4jDriver.session();
     session
-      .run(accessRegister, {
+      .run("CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u", {
         nameFirst,
         nameLast,
         login: user.login,

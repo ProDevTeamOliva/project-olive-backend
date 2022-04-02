@@ -1,16 +1,5 @@
 const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
-const {
-  userGetById,
-  userGetPost,
-  userGetLikes,
-  userFriendPost,
-  userAcceptPost,
-  userFriendDelete,
-  userPictureGet,
-  userGet,
-  userGetByValue,
-} = require("../cypher/requests");
 const { NotFoundError, FriendError } = require("../utils/errors");
 
 router.get("/:id", (req, res, next) => {
@@ -18,7 +7,7 @@ router.get("/:id", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(userGetById, {
+    .run("MATCH (u:User {id: $id}) RETURN u", {
       id,
     })
     .then(({records: [record]}) => {
@@ -43,7 +32,7 @@ router.get("/:id/post", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(userGetPost, {
+    .run("MATCH (u:User{id:$id}) optional MATCH (p:Post)<-[:POSTED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc", {
       id,
     })
     .then(({records}) => {
@@ -84,7 +73,7 @@ router.get("/:id/like", (req, res, next) => {
   const id = req.params.id;
 
   const session = neo4jDriver.session();
-  session.run(userGetLikes, { id })
+  session.run("MATCH (u:User{id:$id}) optional match (p:Post)<-[:LIKED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l", { id })
     .then(({records}) => {
       if(!records.length){
         throw new NotFoundError("apiUserNotFoundError")
@@ -125,7 +114,7 @@ router.post("/:id/friend", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(userFriendPost, {
+    .run("MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1,p,u2", {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
@@ -148,7 +137,7 @@ router.post("/:id/accept", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(userAcceptPost, {
+    .run("MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $id}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) RETURN u1,f,u2", {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
@@ -170,7 +159,7 @@ router.delete("/:id/friend", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(userFriendDelete, {
+    .run("MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1,u2", {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
@@ -191,7 +180,7 @@ router.get("/:id/picture", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(userPictureGet, {
+    .run("MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[UPLOADED]->(p: Picture) RETURN p", {
       id,
     })
     .then(({records}) => {
@@ -218,7 +207,7 @@ router.get("/:id/picture", (req, res, next) => {
 router.get("/", (req, res, next) => {
 
   const session = neo4jDriver.session();
-  session.run(userGet)
+  session.run("MATCH (u:User) RETURN u")
     .then(({records}) => {
       const users = records.map(record => {
         const user = record.get(record.keys[0]).properties
@@ -240,7 +229,7 @@ router.get("/search/:value", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
   const session = neo4jDriver.session();
   session
-    .run(userGetByValue, {
+    .run("MATCH (u:User ) WHERE (toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue) AND NOT u.sessionUserID=$sessionUserID  RETURN u LIMIT 15", {
       sessionUserID,
       searchValue,
     })

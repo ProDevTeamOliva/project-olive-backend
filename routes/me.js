@@ -2,23 +2,13 @@ const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 const { saveBase64Picture } = require("../utils/utils.js");
 const { v4: uuidv4 } = require("uuid");
-const {
-  meGet,
-  meFriendGet,
-  mePostGet,
-  meLikeGet,
-  mePictureGet,
-  mePicturePost,
-  meAvatarGet,
-  meAvatarPatch,
-} = require("../cypher/requests");
 
 router.get("/", (req, res, next) => {
   const id = req.user._id;
 
   const session = neo4jDriver.session();
   session
-    .run(meGet, {
+    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
       sessionUserID: id.toString(),
     })
     .then(({records: [record]}) => {
@@ -39,7 +29,7 @@ router.get("/friend", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(meFriendGet, {
+    .run("MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r", {
       sessionUserID: id.toString(),
     })
     .then(({records}) => {
@@ -82,7 +72,7 @@ router.get("/post", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   const session = neo4jDriver.session();
-  session.run(mePostGet, { sessionUserID })
+  session.run("MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc", { sessionUserID })
     .then(({records}) => {
       const posts = records.map(record => {
 
@@ -113,7 +103,7 @@ router.get("/like", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   const session = neo4jDriver.session();
-  session.run(meLikeGet, { sessionUserID })
+  session.run("MATCH (p:Post)<-[:LIKED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l", { sessionUserID })
     .then(({records}) => {
       const posts = records.map(record => {
 
@@ -145,7 +135,7 @@ router.get("/picture", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(mePictureGet, {
+    .run("MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p", {
       sessionUserID: id.toString(),
     })
     .then(({records}) => {
@@ -185,7 +175,7 @@ router.post("/picture", (req, res, next) => {
   const session = neo4jDriver.session();
 
   session
-    .run(mePicturePost, {
+    .run("UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture:ID {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p", {
       sessionUserID: id.toString(),
       pictures: pictures,
     })
@@ -224,7 +214,7 @@ router.patch("/avatar", (req, res, next) => {
   const session = neo4jDriver.session();
 
   session
-    .run(meAvatarPatch, {
+    .run("MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar:ID {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u", {
       sessionUserID: userId.toString(),
       avatar,
     })
@@ -249,7 +239,7 @@ router.get("/avatar", (req, res, next) => {
   const session = neo4jDriver.session();
 
   session
-    .run(meAvatarGet, {
+    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
       sessionUserID: userId.toString(),
     })
     .then(({records: [record]}) => {

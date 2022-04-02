@@ -2,21 +2,12 @@ const router = require("express").Router();
 const neo4jDriver = require("../config/neo4jDriver");
 const { saveBase64Picture } = require("../utils/utils");
 const { v4: uuidv4 } = require("uuid");
-const {
-  postGet,
-  postSearchGet,
-  postPost,
-  postGetById,
-  postDelete,
-  postLikePost,
-  postLikeDelete,
-} = require("../cypher/requests");
 const { PostError, NotFoundError } = require("../utils/errors");
 
 router.get("/", (req, res, next) => {
 
   const session = neo4jDriver.session();
-  session.run(postGet)
+  session.run("MATCH (p:Post)<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc")
     .then(({records}) => {
       const posts = records.map(record => {
 
@@ -48,7 +39,7 @@ router.get("/search/:tag", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(postSearchGet, {
+    .run("MATCH (p:Post)<-[:POSTED]-(u:User) WHERE $tag IN p.tags optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc", {
       tag,
     })
     .then(({records}) => {
@@ -88,7 +79,7 @@ router.post("/", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(postPost, {
+    .run("MATCH (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$picturesParsed}) return p, u", {
       content,
       sessionUserID,
       tags,
@@ -121,7 +112,7 @@ router.get("/:id", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(postGetById, {
+    .run("MATCH (p:Post {id: $id})<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l", {
       id,
     })
     .then(({records:[record]}) => {
@@ -154,7 +145,7 @@ router.delete("/:id", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(postDelete, {
+    .run("MATCH (p:Post {id: $id}) detach delete p RETURN p", {
       id,
     })
     .then(({records:[record]}) => {
@@ -177,7 +168,7 @@ router.post("/:id/like", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(postLikePost, {
+    .run("MATCH (u:User{sessionUserID: $sessionUserID}) MATCH (p:Post{id: $id}) WHERE NOT exists((u)-[:LIKED]-(p)) MERGE (u)-[l:LIKED]->(p) RETURN u,l,p", {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
@@ -199,7 +190,7 @@ router.delete("/:id/like", (req, res, next) => {
 
   const session = neo4jDriver.session();
   session
-    .run(postLikeDelete, {
+    .run("MATCH (u:User{sessionUserID: $sessionUserID})-[r:LIKED]->(p:Post{id: $id}) DELETE r RETURN u,p", {
       sessionUserID: idSource.toString(),
       id: idTarget,
     })
