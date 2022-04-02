@@ -16,13 +16,16 @@ router.post("/register", (req, res, next) => {
 
     const session = neo4jDriver.session();
     session
-      .run("CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u", {
-        nameFirst,
-        nameLast,
-        login: user.login,
-        sessionUserID: user._id.toString(),
-        avatar: "/public/pictures/avatar_default.png",
-      })
+      .run(
+        "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
+        {
+          nameFirst,
+          nameLast,
+          login: user.login,
+          sessionUserID: user._id.toString(),
+          avatar: "/public/pictures/avatar_default.png",
+        }
+      )
       .then(() =>
         res.status(201).json({
           message: "apiRegisterSuccess",
