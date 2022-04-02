@@ -53,22 +53,21 @@ router.get("/:id/post", (req, res, next) => {
 
       const posts = records.reduce((result, record) => {
         const postNode = record.get("p")
-        if(!postNode) {
-          return result
+        if(postNode) {
+          const post = postNode.properties;
+          const user = record.get("u").properties;
+          user.sessionUserID = undefined;
+          post.user = user;
+  
+          post.likes = record.get("l").map((l) => {
+            const properties = l.properties;
+            properties.sessionUserID = undefined;
+            return properties;
+          });
+  
+          result.push(post)
         }
 
-        const post = postNode.properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
-
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
-
-        result.push(post)
         return result
       }, [])
 
@@ -93,22 +92,21 @@ router.get("/:id/like", (req, res, next) => {
 
       const posts = records.reduce((result, record) => {
         const postNode = record.get("p")
-        if(!postNode) {
-          return result
+        if(postNode) {
+          const post = postNode.properties;
+          const user = record.get("u").properties;
+          user.sessionUserID = undefined;
+          post.user = user;
+  
+          post.likes = record.get("l").map((l) => {
+            const properties = l.properties;
+            properties.sessionUserID = undefined;
+            return properties;
+          });
+  
+          result.push(post)
         }
-
-        const post = postNode.properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
-
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
-
-        result.push(post)
+        
         return result
       }, [])
 
@@ -188,33 +186,33 @@ router.delete("/:id/friend", (req, res, next) => {
     .then(() => session.close())
 });
 
-router.get("/:id/picture", async (req, res) => {
+router.get("/:id/picture", (req, res, next) => {
   const id = req.params.id;
-
-  let pictures = [];
 
   const session = neo4jDriver.session();
   session
     .run(userPictureGet, {
       id,
     })
-    .subscribe({
-      onNext: (record) => {
-        pictures = [...pictures, record.get("p").properties];
-      },
-      onCompleted: () => {
-        session.close();
+    .then(({records}) => {
+      if(!records.length){
+        throw new NotFoundError("apiUserNotFoundError")
+      }
 
-        return res.status(200).json({
-          pictures,
-          message: "apiUserPicturesSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      const pictures = records.reduce((result, record) => {
+        const pictureNode = record.get("p")
+        if(pictureNode) {
+          result.push(pictureNode.properties)
+        }
+        return result
+      }, [])
+      res.status(200).json({
+        pictures,
+        message: "apiUserPicturesSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 router.get("/", (req, res, next) => {

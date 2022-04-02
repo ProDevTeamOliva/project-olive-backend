@@ -140,46 +140,35 @@ router.get("/like", (req, res, next) => {
     .then(() => session.close())
 });
 
-router.get("/picture", async (req, res) => {
+router.get("/picture", (req, res, next) => {
   const id = req.user._id;
-
-  let pictures = [];
 
   const session = neo4jDriver.session();
   session
     .run(mePictureGet, {
       sessionUserID: id.toString(),
     })
-    .subscribe({
-      onNext: (record) => {
+    .then(({records}) => {
+
+      const pictures = records.map(record => {
         const pictureNode = record.get("p").properties;
+        return {
+          id: pictureNode.id,
+          picture: pictureNode.picture,
+          private: pictureNode.private,
+        }
+      })
 
-        pictures = [
-          ...pictures,
-          {
-            id: pictureNode.id,
-            picture: pictureNode.picture,
-            private: pictureNode.private,
-          },
-        ];
-      },
-      onCompleted: () => {
-        session.close();
-
-        return res.status(200).json({
-          pictures,
-          message: "apiMyPicturesSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        console.log(error);
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        pictures,
+        message: "apiMyPicturesSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.post("/picture", async (req, res) => {
+router.post("/picture", (req, res, next) => {
   const id = req.user._id;
 
   const pictures = req.body.pictures.map((element) => {
@@ -200,37 +189,27 @@ router.post("/picture", async (req, res) => {
       sessionUserID: id.toString(),
       pictures: pictures,
     })
-    .subscribe({
-      onNext: (record) => {
+    .then(({records}) => {
+      records.forEach(record => {
         const pictureNode = record.get("p").properties;
-
         const picture = pictures.filter((pic) => pic.id === pictureNode.id)[0];
+        saveBase64Picture(picture.picture, picture.base64)
+      })
 
-        saveBase64Picture(picture.picture, picture.base64);
-      },
-      onCompleted: () => {
-        session.close();
-
-        return res.status(200).json({
-          pictures: pictures.map((picture) => {
-            return {
-              id: picture.id,
-              picture: picture.picture,
-              private: picture.private,
-            };
-          }),
-          message: "apiMyPicturesSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        console.log(error);
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        pictures: pictures.map((picture) => ({
+            id: picture.id,
+            picture: picture.picture,
+            private: picture.private,
+          })),
+        message: "apiMyPicturesSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.patch("/avatar", async (req, res) => {
+router.patch("/avatar", (req, res, next) => {
   const userId = req.user._id;
   const picId = uuidv4();
 
@@ -244,66 +223,46 @@ router.patch("/avatar", async (req, res) => {
 
   const session = neo4jDriver.session();
 
-  let user = {};
-
   session
     .run(meAvatarPatch, {
       sessionUserID: userId.toString(),
-      avatar: avatar,
+      avatar,
     })
-    .subscribe({
-      onNext: (record) => {
-        user = record.get("u").properties;
+    .then(({records: [record]}) => {
+      const user = record.get("u").properties;
+      user.sessionUserID = undefined;
 
-        saveBase64Picture(avatar.picture, avatar.base64);
-      },
-      onCompleted: () => {
-        session.close();
+      saveBase64Picture(avatar.picture, avatar.base64);
 
-        return res.status(200).json({
-          user,
-          message: "apiMyAvatarSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        console.log(error);
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        user,
+        message: "apiMyAvatarSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
-router.get("/avatar", async (req, res) => {
+router.get("/avatar", (req, res, next) => {
   const userId = req.user._id;
 
   const session = neo4jDriver.session();
-
-  let avatar = "";
 
   session
     .run(meAvatarGet, {
       sessionUserID: userId.toString(),
     })
-    .subscribe({
-      onNext: (record) => {
-        const userData = record.get("u").properties;
+    .then(({records: [record]}) => {
+      const userData = record.get("u").properties;
+      const avatar = userData.avatar;
 
-        avatar = userData.avatar;
-      },
-      onCompleted: () => {
-        session.close();
-
-        return res.status(200).json({
-          avatar,
-          message: "apiMyAvatarSuccess",
-        });
-      },
-      onError: (error) => {
-        session.close();
-        console.log(error);
-        return res.status(500).json({ message: "apiServerError" });
-      },
-    });
+      res.status(200).json({
+        avatar,
+        message: "apiMyAvatarSuccess",
+      })
+    })
+    .catch(err => next(err))
+    .then(() => session.close())
 });
 
 module.exports = router;
