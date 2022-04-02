@@ -2,7 +2,6 @@ const passport = require("passport");
 const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const neo4jDriver = require("../config/neo4jDriver");
-const { accessRegister } = require("../cypher/requests");
 const { authenticationCheck } = require("../utils/middlewares");
 const { MissingCredentialsError } = require("../utils/errors");
 
@@ -17,13 +16,16 @@ router.post("/register", (req, res, next) => {
 
     const session = neo4jDriver.session();
     session
-      .run(accessRegister, {
-        nameFirst,
-        nameLast,
-        login: user.login,
-        sessionUserID: user._id.toString(),
-        avatar: "/public/pictures/avatar_default.png",
-      })
+      .run(
+        "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
+        {
+          nameFirst,
+          nameLast,
+          login: user.login,
+          sessionUserID: user._id.toString(),
+          avatar: "/public/pictures/avatar_default.png",
+        }
+      )
       .then(() =>
         res.status(201).json({
           message: "apiRegisterSuccess",
@@ -67,7 +69,7 @@ router.post("/login", (req, res, next) => {
   )(req, res, next);
 });
 
-router.post("/logout", authenticationCheck, async (req, res) => {
+router.post("/logout", authenticationCheck, (req, res) => {
   req.logout();
   req.session.destroy(() => {
     res.clearCookie("connect.sid");
