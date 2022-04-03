@@ -13,9 +13,13 @@ const {
   PostError,
 } = require("./errors");
 
+const logger = require("../config/logger");
+
 module.exports = (err, req, res, next) => {
   const sendResponse = (err, code) =>
     res.status(code).json({ message: err.message });
+
+  logger.error(err);
 
   if (err instanceof NotFoundError) {
     sendResponse(err, 404);

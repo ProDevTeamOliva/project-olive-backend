@@ -1,4 +1,6 @@
 const sio = require("../config/socket");
+const logger = require("../config/logger");
+
 const AuthenticationError = require("passport/lib/errors/authenticationerror");
 const { authenticationCheck, wrapMiddleware } = require("../utils/middlewares");
 
@@ -16,6 +18,6 @@ const getId = (socket) => socket.nsp.name.split("/")[2];
 // });
 // ----
 
-console.log("WebSocket initialized!");
+logger.info("WebSocket initialized!");
 
 module.exports = sio;

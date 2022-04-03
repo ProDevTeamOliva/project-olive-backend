@@ -1,4 +1,5 @@
 const neo4j = require("neo4j-driver");
+const logger = require("./logger");
 
 const username = process.env.NEO4J_USERNAME;
 const password = process.env.NEO4J_PASSWORD;
@@ -15,10 +16,10 @@ const driver = neo4j.driver(
 driver
   .verifyConnectivity()
   .then(() => {
-    console.log("Connected to Neo4J");
+    logger.info("Connected to Neo4J");
   })
   .catch((error) => {
-    console.error("Can't connect to Neo4J\n", error);
+    logger.error("Can't connect to Neo4J\n", error);
   });
 
 module.exports = driver;
