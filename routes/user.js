@@ -199,7 +199,7 @@ router.get("/:id/picture", (req, res, next) => {
       "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[UPLOADED]->(p: Picture {private: $private}) RETURN p",
       {
         id,
-        private: false
+        private: false,
       }
     )
     .then(({ records }) => {
