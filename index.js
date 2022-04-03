@@ -10,6 +10,7 @@ const fs = require("fs");
 const session = require("./config/session");
 const originHost = require("./config/originHost");
 const sio = require("./socket/socket");
+const logger = require("./config/logger");
 
 const app = require("./config/express");
 
@@ -60,5 +61,5 @@ const server = require("./config/server");
 const port = process.env.PORT;
 
 server.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  logger.info(`Server listening on port ${port}`);
 });

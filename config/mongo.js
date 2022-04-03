@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const logger = require("./logger");
 
 const username = process.env.MONGO_USERNAME;
 const password = encodeURIComponent(process.env.MONGO_PASSWORD);
@@ -16,13 +17,13 @@ mongoose.connect(
 
 mongoose.connection
   .on("connected", () => {
-    console.log("Connected to MongoDB");
+    logger.info("Connected to MongoDB");
   })
   .on("error", (error) => {
-    console.error("Error on MongoDB connection\n", error);
+    logger.error("Error on MongoDB connection\n", error);
   })
   .on("disconnected", () => {
-    console.log("Disconnected from MongoDB");
+    logger.info("Disconnected from MongoDB");
   });
 
 module.exports = mongoose;

@@ -1,4 +1,5 @@
 const app = require("./express");
+const logger = require("./logger");
 
 let server;
 
@@ -16,7 +17,7 @@ if (parseInt(process.env.HTTPS)) {
     );
   } catch (err) {
     if (err.code === "ENOENT") {
-      console.log("Can't find ssl keys. Using HTTP instead!");
+      logger.info("Can't find ssl keys. Using HTTP instead!");
 
       const http = require("http");
       server = http.createServer(app);
