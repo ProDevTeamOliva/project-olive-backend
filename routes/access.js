@@ -7,9 +7,9 @@ const { neo4jQueryWrapper, validateFields } = require("../utils/utils");
 
 router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
-  
-  if(!validateFields(next, {nameFirst, nameLast})) {
-      return
+
+  if (!validateFields(next, { nameFirst, nameLast })) {
+    return;
   }
 
   SessionUser.register({ login }, password, (err, user) => {
@@ -17,27 +17,28 @@ router.post("/register", (req, res, next) => {
       err.message = `api${err.name}`;
       return next(err);
     }
-    const sessionUserID = user._id.toString()
-    
-      neo4jQueryWrapper(
-        "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
-        {
-            nameFirst,
-            nameLast,
-            login,
-            sessionUserID,
-            avatar: "/public/pictures/avatar_default.png",
-        }
-      )
+    const sessionUserID = user._id.toString();
+
+    neo4jQueryWrapper(
+      "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
+      {
+        nameFirst,
+        nameLast,
+        login,
+        sessionUserID,
+        avatar: "/public/pictures/avatar_default.png",
+      }
+    )
       .then(() =>
         res.status(201).json({
           message: "apiRegisterSuccess",
         })
       )
       .catch((err) => {
-        SessionUser.findByIdAndDelete(user._id.toString()).exec()
-            .finally(() => next(err));
-      })
+        SessionUser.findByIdAndDelete(user._id.toString())
+          .exec()
+          .finally(() => next(err));
+      });
   });
 });
 

@@ -13,7 +13,7 @@ const {
   PostError,
   ValidationError,
 } = require("./errors");
-const {ValidationError: ValidationErrorMongoose} = require("mongoose").Error
+const { ValidationError: ValidationErrorMongoose } = require("mongoose").Error;
 
 const logger = require("../config/logger");
 

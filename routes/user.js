@@ -5,9 +5,9 @@ const { neo4jQueryWrapper } = require("../utils/utils");
 router.get("/:id", (req, res, next) => {
   const id = req.params.id;
 
-    neo4jQueryWrapper("MATCH (u:User {id: $id}) RETURN u", {
-      id,
-    })
+  neo4jQueryWrapper("MATCH (u:User {id: $id}) RETURN u", {
+    id,
+  })
     .then(({ records: [record] }) => {
       if (!record) {
         throw new NotFoundError("apiUserNotFoundError");
@@ -21,18 +21,18 @@ router.get("/:id", (req, res, next) => {
         message: "apiUserFoundSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.get("/:id/post", (req, res, next) => {
   const id = req.params.id;
 
-    neo4jQueryWrapper(
-      "MATCH (u:User{id:$id}) optional MATCH (p:Post)<-[:POSTED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
-      {
-        id,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u:User{id:$id}) optional MATCH (p:Post)<-[:POSTED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+    {
+      id,
+    }
+  )
     .then(({ records }) => {
       if (!records.length) {
         throw new NotFoundError("apiUserNotFoundError");
@@ -63,16 +63,16 @@ router.get("/:id/post", (req, res, next) => {
         posts,
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.get("/:id/like", (req, res, next) => {
   const id = req.params.id;
 
-    neo4jQueryWrapper(
-      "MATCH (u1:User{id:$id}) optional match (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(u1) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
-      { id }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u1:User{id:$id}) optional match (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(u1) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
+    { id }
+  )
     .then(({ records }) => {
       if (!records.length) {
         throw new NotFoundError("apiUserNotFoundError");
@@ -103,20 +103,20 @@ router.get("/:id/like", (req, res, next) => {
         posts,
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.post("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-    neo4jQueryWrapper(
-      "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1,p,u2",
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1,p,u2",
+    {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    }
+  )
     .then(({ records: [record] }) => {
       if (!record) {
         throw new FriendError("apiFriendPendingError");
@@ -125,20 +125,20 @@ router.post("/:id/friend", (req, res, next) => {
         message: "apiFriendPendingSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.post("/:id/accept", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-    neo4jQueryWrapper(
-      "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $id}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) RETURN u1,f,u2",
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $id}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) RETURN u1,f,u2",
+    {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    }
+  )
     .then(({ records: [record] }) => {
       if (!record) {
         throw new FriendError("apiFriendAcceptError");
@@ -147,20 +147,20 @@ router.post("/:id/accept", (req, res, next) => {
         message: "apiFriendAcceptSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.delete("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-    neo4jQueryWrapper(
-      "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1,u2",
-      {
-        sessionUserID: idSource.toString(),
-        id: idTarget,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1,u2",
+    {
+      sessionUserID: idSource.toString(),
+      id: idTarget,
+    }
+  )
     .then(({ records: [record] }) => {
       if (!record) {
         throw new FriendError("apiFriendRemoveError");
@@ -169,19 +169,19 @@ router.delete("/:id/friend", (req, res, next) => {
         message: "apiFriendRemoveSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.get("/:id/picture", (req, res, next) => {
   const id = req.params.id;
 
-    neo4jQueryWrapper(
-      "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[UPLOADED]->(p: Picture {private: $private}) RETURN p",
-      {
-        id,
-        private: false,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[UPLOADED]->(p: Picture {private: $private}) RETURN p",
+    {
+      id,
+      private: false,
+    }
+  )
     .then(({ records }) => {
       if (!records.length) {
         throw new NotFoundError("apiUserNotFoundError");
@@ -199,12 +199,11 @@ router.get("/:id/picture", (req, res, next) => {
         message: "apiUserPicturesSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.get("/", (req, res, next) => {
-
-    neo4jQueryWrapper("MATCH (u:User) RETURN u")
+  neo4jQueryWrapper("MATCH (u:User) RETURN u")
     .then(({ records }) => {
       const users = records.map((record) => {
         const user = record.get(record.keys[0]).properties;
@@ -216,20 +215,20 @@ router.get("/", (req, res, next) => {
         message: "apiUsersSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 router.get("/search/:value", (req, res, next) => {
   const searchValue = req.params.value.toString().toLowerCase();
   const sessionUserID = req.user._id.toString();
 
-    neo4jQueryWrapper(
-      "MATCH (u:User ) WHERE (toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue) AND NOT u.sessionUserID=$sessionUserID  RETURN u LIMIT 15",
-      {
-        sessionUserID,
-        searchValue,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u:User ) WHERE (toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue) AND NOT u.sessionUserID=$sessionUserID  RETURN u LIMIT 15",
+    {
+      sessionUserID,
+      searchValue,
+    }
+  )
     .then(({ records }) => {
       const users = records.map((record) => {
         const user = record.get(record.keys[0]).properties;
@@ -241,7 +240,7 @@ router.get("/search/:value", (req, res, next) => {
         message: "apiUsersSuccess",
       });
     })
-    .catch((err) => next(err))
+    .catch((err) => next(err));
 });
 
 module.exports = router;

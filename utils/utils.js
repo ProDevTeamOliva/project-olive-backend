@@ -15,37 +15,40 @@ function saveBase64Picture(filepath, image) {
 }
 
 const neo4jQueryWrapper = (query, parameters) => {
-    const session = driver.session()
-    return session.run(query, parameters)
-        .finally(result => session.close().finally(() => {
-            if(result instanceof Error) {
-                throw result
-            } else {
-                return result
-            }
-        }))
-}
+  const session = driver.session();
+  return session.run(query, parameters).finally((result) =>
+    session.close().finally(() => {
+      if (result instanceof Error) {
+        throw result;
+      } else {
+        return result;
+      }
+    })
+  );
+};
 
 const validationSetup = {
-    nameFirst: validateString(),
-    nameLast: validateString(),
-    content: validateString({max: 1024}),
-    tags: validateArray({elementValidator: validateString()}),
-    pictures: () => true,
-    type: () => true,
-    filename: () => true,
-    avatar: () => true
-}
+  nameFirst: validateString(),
+  nameLast: validateString(),
+  content: validateString({ max: 1024 }),
+  tags: validateArray({ elementValidator: validateString() }),
+  pictures: () => true,
+  type: () => true,
+  filename: () => true,
+  avatar: () => true,
+};
 const validateFields = (next, fields) => {
-    if(Object.entries(fields).every(([key, value]) => {
-        const fieldFunction = validationSetup[key]
-        return fieldFunction && fieldFunction(value)
-    })) {
-        return true
-    } else {
-        next(new ValidationError("apiValidationError"))
-        return false
-    }
-}
+  if (
+    Object.entries(fields).every(([key, value]) => {
+      const fieldFunction = validationSetup[key];
+      return fieldFunction && fieldFunction(value);
+    })
+  ) {
+    return true;
+  } else {
+    next(new ValidationError("apiValidationError"));
+    return false;
+  }
+};
 
 module.exports = { saveBase64Picture, neo4jQueryWrapper, validateFields };

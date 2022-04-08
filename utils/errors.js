@@ -17,12 +17,12 @@ const notFoundError = "NotFoundError";
 const missingCredentialsError = "MissingCredentialsError";
 const friendError = "FriendError";
 const postError = "PostError";
-const validationError = "ValidationError"
+const validationError = "ValidationError";
 
 module.exports = {
   [notFoundError]: createError(notFoundError),
   [missingCredentialsError]: createError(missingCredentialsError),
   [friendError]: createError(friendError),
   [postError]: createError(postError),
-  [validationError]: createError(validationError)
+  [validationError]: createError(validationError),
 };
