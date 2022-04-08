@@ -243,7 +243,7 @@ router.get("/", (req, res, next) => {
 });
 
 router.get("/search/:value", (req, res, next) => {
-  const searchValue = req.params.value.toString();
+  const searchValue = req.params.value.toString().toLowerCase();
   const sessionUserID = req.user._id.toString();
   const session = neo4jDriver.session();
   session
