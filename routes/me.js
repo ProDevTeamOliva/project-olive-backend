@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { saveBase64Picture, neo4jQueryWrapper } = require("../utils/utils.js");
+const { saveBase64Picture, neo4jQueryWrapper, validateFields } = require("../utils/utils.js");
 const { v4: uuidv4 } = require("uuid");
 
 router.get("/", (req, res, next) => {
@@ -159,8 +159,13 @@ router.get("/picture", (req, res, next) => {
 
 router.post("/picture", (req, res, next) => {
   const id = req.user._id;
+  const {pictures} = req.body
 
-  const pictures = req.body.pictures.map((element) => {
+    if(!validateFields(next, {pictures})) {
+        return
+    }
+
+  const picturesParsed = pictures.map((element) => {
     const id = uuidv4();
 
     return {
@@ -175,18 +180,18 @@ router.post("/picture", (req, res, next) => {
         "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture:ID {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
       {
         sessionUserID: id.toString(),
-        pictures: pictures,
+        pictures: picturesParsed,
       }
     )
     .then(({ records }) => {
       records.forEach((record) => {
         const pictureNode = record.get("p").properties;
-        const picture = pictures.filter((pic) => pic.id === pictureNode.id)[0];
+        const picture = picturesParsed.filter((pic) => pic.id === pictureNode.id)[0];
         saveBase64Picture(picture.picture, picture.base64);
       });
 
       res.status(200).json({
-        pictures: pictures.map((picture) => ({
+        pictures: picturesParsed.map((picture) => ({
           id: picture.id,
           picture: picture.picture,
           private: picture.private,
@@ -199,28 +204,32 @@ router.post("/picture", (req, res, next) => {
 
 router.patch("/avatar", (req, res, next) => {
   const userId = req.user._id;
+  const {filename, avatar} = req.body;
+
+  if(!validateFields(next, {filename, avatar})) {
+      return
+  }
+
   const picId = uuidv4();
 
-  const reqAvatar = req.body;
-
-  const avatar = {
+  const avatarParsed = {
     id: picId,
-    picture: `/public/pictures/${picId}-${reqAvatar.filename}`,
-    base64: reqAvatar.avatar,
+    picture: `/public/pictures/${picId}-${filename}`,
+    base64: avatar,
   };
 
     neo4jQueryWrapper(
         "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar:ID {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
       {
         sessionUserID: userId.toString(),
-        avatar,
+        avatar: avatarParsed,
       }
     )
     .then(({ records: [record] }) => {
       const user = record.get("u").properties;
       user.sessionUserID = undefined;
 
-      saveBase64Picture(avatar.picture, avatar.base64);
+      saveBase64Picture(avatarParsed.picture, avatarParsed.base64);
 
       res.status(200).json({
         user,

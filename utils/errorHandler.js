@@ -11,6 +11,7 @@ const {
   MissingCredentialsError,
   FriendError,
   PostError,
+  ValidationError,
 } = require("./errors");
 
 const logger = require("../config/logger");
@@ -30,7 +31,8 @@ module.exports = (err, req, res, next) => {
   } else if (
     err instanceof MissingUsernameError ||
     err instanceof MissingPasswordError ||
-    err instanceof MissingCredentialsError
+    err instanceof MissingCredentialsError ||
+    err instanceof ValidationError
   ) {
     sendResponse(err, 422);
   } else if (

@@ -3,24 +3,29 @@ const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const { authenticationCheck } = require("../utils/middlewares");
 const { MissingCredentialsError } = require("../utils/errors");
-const { neo4jQueryWrapper } = require("../utils/utils");
+const { neo4jQueryWrapper, validateFields } = require("../utils/utils");
 
 router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
+  
+  if(!validateFields(next, {nameFirst, nameLast})) {
+      return
+  }
 
   SessionUser.register({ login }, password, (err, user) => {
     if (err) {
       err.message = `api${err.name}`;
       return next(err);
     }
+    const sessionUserID = user._id.toString()
     
       neo4jQueryWrapper(
         "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
         {
             nameFirst,
             nameLast,
-            login: user.login,
-            sessionUserID: user._id.toString(),
+            login,
+            sessionUserID,
             avatar: "/public/pictures/avatar_default.png",
         }
       )

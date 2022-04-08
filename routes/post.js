@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { saveBase64Picture, neo4jQueryWrapper } = require("../utils/utils");
+const { saveBase64Picture, neo4jQueryWrapper, validateFields } = require("../utils/utils");
 const { v4: uuidv4 } = require("uuid");
 const { PostError, NotFoundError } = require("../utils/errors");
 
@@ -67,21 +67,24 @@ router.get("/search/:tag", (req, res, next) => {
 
 router.post("/", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
-
   const { content, tags, pictures, type } = req.body;
+
+  if(!validateFields(next, {content, tags, type, pictures})) {
+    return
+  }
 
   const picturesParsed = (pictures ?? []).map(
     (element) => `/public/pictures/${uuidv4()}-${element.filename}`
   );
 
     neo4jQueryWrapper(
-      "MATCH (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$picturesParsed}) return p, u",
+      "MATCH (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) return p, u",
       {
         content,
         sessionUserID,
         tags,
         type,
-        picturesParsed,
+        pictures: picturesParsed,
       }
     )
     .then(({ records: [record] }) => {
