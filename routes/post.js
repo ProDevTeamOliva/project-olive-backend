@@ -1,13 +1,11 @@
 const router = require("express").Router();
-const neo4jDriver = require("../config/neo4jDriver");
-const { saveBase64Picture } = require("../utils/utils");
+const { saveBase64Picture, neo4jQueryWrapper } = require("../utils/utils");
 const { v4: uuidv4 } = require("uuid");
 const { PostError, NotFoundError } = require("../utils/errors");
 
 router.get("/", (req, res, next) => {
-  const session = neo4jDriver.session();
-  session
-    .run(
+
+    neo4jQueryWrapper(
       "MATCH (p:Post)<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc"
     )
     .then(({ records }) => {
@@ -32,15 +30,12 @@ router.get("/", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/search/:tag", (req, res, next) => {
   const tag = req.params.tag.toString();
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (p:Post)<-[:POSTED]-(u:User) WHERE $tag IN p.tags optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
       {
         tag,
@@ -68,7 +63,6 @@ router.get("/search/:tag", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.post("/", (req, res, next) => {
@@ -80,9 +74,7 @@ router.post("/", (req, res, next) => {
     (element) => `/public/pictures/${uuidv4()}-${element.filename}`
   );
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$picturesParsed}) return p, u",
       {
         content,
@@ -109,15 +101,12 @@ router.post("/", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/:id", (req, res, next) => {
   const id = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (p:Post {id: $id})<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
       {
         id,
@@ -144,16 +133,15 @@ router.get("/:id", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.delete("/:id", (req, res, next) => {
   const id = req.params.id;
+  const sessionUserID = req.user._id.toString();
 
-  const session = neo4jDriver.session();
-  session
-    .run("MATCH (p:Post {id: $id}) detach delete p RETURN p", {
+    neo4jQueryWrapper("MATCH (p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) detach delete p RETURN p", {
       id,
+      sessionUserID
     })
     .then(({ records: [record] }) => {
       if (!record) {
@@ -165,16 +153,13 @@ router.delete("/:id", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.post("/:id/like", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u:User{sessionUserID: $sessionUserID}) MATCH (p:Post{id: $id}) WHERE NOT exists((u)-[:LIKED]-(p)) MERGE (u)-[l:LIKED]->(p) RETURN u,l,p",
       {
         sessionUserID: idSource.toString(),
@@ -190,16 +175,13 @@ router.post("/:id/like", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.delete("/:id/like", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u:User{sessionUserID: $sessionUserID})-[r:LIKED]->(p:Post{id: $id}) DELETE r RETURN u,p",
       {
         sessionUserID: idSource.toString(),
@@ -215,7 +197,6 @@ router.delete("/:id/like", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 module.exports = router;

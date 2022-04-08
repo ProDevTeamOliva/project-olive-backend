@@ -14,8 +14,6 @@ const logger = require("./config/logger");
 
 const app = require("./config/express");
 
-require("./config/neo4jDriver");
-
 const picturesDir = "public/pictures";
 
 if (!fs.existsSync(`./${picturesDir}`)) {

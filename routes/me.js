@@ -103,7 +103,7 @@ router.get("/like", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
     neo4jQueryWrapper(
-        "MATCH (p:Post)<-[:LIKED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+        "MATCH (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
       { sessionUserID }
     )
     .then(({ records }) => {

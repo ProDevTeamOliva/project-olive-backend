@@ -1,13 +1,11 @@
 const router = require("express").Router();
-const neo4jDriver = require("../config/neo4jDriver");
 const { NotFoundError, FriendError } = require("../utils/errors");
+const { neo4jQueryWrapper } = require("../utils/utils");
 
 router.get("/:id", (req, res, next) => {
   const id = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run("MATCH (u:User {id: $id}) RETURN u", {
+    neo4jQueryWrapper("MATCH (u:User {id: $id}) RETURN u", {
       id,
     })
     .then(({ records: [record] }) => {
@@ -24,15 +22,12 @@ router.get("/:id", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/:id/post", (req, res, next) => {
   const id = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u:User{id:$id}) optional MATCH (p:Post)<-[:POSTED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
       {
         id,
@@ -69,16 +64,13 @@ router.get("/:id/post", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/:id/like", (req, res, next) => {
   const id = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (u:User{id:$id}) optional match (p:Post)<-[:LIKED]-(u) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
+    neo4jQueryWrapper(
+      "MATCH (u1:User{id:$id}) optional match (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(u1) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
       { id }
     )
     .then(({ records }) => {
@@ -112,16 +104,13 @@ router.get("/:id/like", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.post("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1,p,u2",
       {
         sessionUserID: idSource.toString(),
@@ -137,16 +126,13 @@ router.post("/:id/friend", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.post("/:id/accept", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $id}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) RETURN u1,f,u2",
       {
         sessionUserID: idSource.toString(),
@@ -162,16 +148,13 @@ router.post("/:id/accept", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.delete("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1,u2",
       {
         sessionUserID: idSource.toString(),
@@ -187,15 +170,12 @@ router.delete("/:id/friend", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/:id/picture", (req, res, next) => {
   const id = req.params.id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
+    neo4jQueryWrapper(
       "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[UPLOADED]->(p: Picture {private: $private}) RETURN p",
       {
         id,
@@ -220,13 +200,11 @@ router.get("/:id/picture", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/", (req, res, next) => {
-  const session = neo4jDriver.session();
-  session
-    .run("MATCH (u:User) RETURN u")
+
+    neo4jQueryWrapper("MATCH (u:User) RETURN u")
     .then(({ records }) => {
       const users = records.map((record) => {
         const user = record.get(record.keys[0]).properties;
@@ -239,15 +217,13 @@ router.get("/", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 router.get("/search/:value", (req, res, next) => {
   const searchValue = req.params.value.toString().toLowerCase();
   const sessionUserID = req.user._id.toString();
-  const session = neo4jDriver.session();
-  session
-    .run(
+
+    neo4jQueryWrapper(
       "MATCH (u:User ) WHERE (toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue) AND NOT u.sessionUserID=$sessionUserID  RETURN u LIMIT 15",
       {
         sessionUserID,
@@ -266,7 +242,6 @@ router.get("/search/:value", (req, res, next) => {
       });
     })
     .catch((err) => next(err))
-    .then(() => session.close());
 });
 
 module.exports = router;
