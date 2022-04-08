@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/ProDevTeamOliva/project-olive-backend#readme",
   "devDependencies": {
+    "axios": "^0.26.1",
     "nodemon": "^2.0.15",
     "prettier": "2.4.1"
   },

@@ -1,40 +1,44 @@
 const passport = require("passport");
 const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
-const neo4jDriver = require("../config/neo4jDriver");
 const { authenticationCheck } = require("../utils/middlewares");
 const { MissingCredentialsError } = require("../utils/errors");
+const { neo4jQueryWrapper, validateFields } = require("../utils/utils");
 
 router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
+
+  if (!validateFields(next, { nameFirst, nameLast })) {
+    return;
+  }
 
   SessionUser.register({ login }, password, (err, user) => {
     if (err) {
       err.message = `api${err.name}`;
       return next(err);
     }
+    const sessionUserID = user._id.toString();
 
-    const session = neo4jDriver.session();
-    session
-      .run(
-        "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
-        {
-          nameFirst,
-          nameLast,
-          login: user.login,
-          sessionUserID: user._id.toString(),
-          avatar: "/public/pictures/avatar_default.png",
-        }
-      )
+    neo4jQueryWrapper(
+      "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
+      {
+        nameFirst,
+        nameLast,
+        login,
+        sessionUserID,
+        avatar: "/public/pictures/avatar_default.png",
+      }
+    )
       .then(() =>
         res.status(201).json({
           message: "apiRegisterSuccess",
         })
       )
       .catch((err) => {
-        SessionUser.findByIdAndDelete(user._id.toString(), () => next(err));
-      })
-      .then(() => session.close());
+        SessionUser.findByIdAndDelete(user._id.toString())
+          .exec()
+          .finally(() => next(err));
+      });
   });
 });
 

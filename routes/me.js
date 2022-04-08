@@ -1,16 +1,17 @@
 const router = require("express").Router();
-const neo4jDriver = require("../config/neo4jDriver");
-const { saveBase64Picture } = require("../utils/utils.js");
+const {
+  saveBase64Picture,
+  neo4jQueryWrapper,
+  validateFields,
+} = require("../utils/utils.js");
 const { v4: uuidv4 } = require("uuid");
 
 router.get("/", (req, res, next) => {
   const id = req.user._id;
 
-  const session = neo4jDriver.session();
-  session
-    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
-      sessionUserID: id.toString(),
-    })
+  neo4jQueryWrapper("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+    sessionUserID: id.toString(),
+  })
     .then(({ records: [record] }) => {
       const user = record.get(record.keys[0]).properties;
       user.sessionUserID = undefined;
@@ -20,21 +21,18 @@ router.get("/", (req, res, next) => {
         message: "apiMyDataSuccess",
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.get("/friend", (req, res, next) => {
   const id = req.user._id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r",
-      {
-        sessionUserID: id.toString(),
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r",
+    {
+      sessionUserID: id.toString(),
+    }
+  )
     .then(({ records }) => {
       const result = records.reduce(
         (result, record) => {
@@ -68,19 +66,16 @@ router.get("/friend", (req, res, next) => {
         message: "apiMyFriendsSuccess",
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.get("/post", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
-  const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
-      { sessionUserID }
-    )
+  neo4jQueryWrapper(
+    "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+    { sessionUserID }
+  )
     .then(({ records }) => {
       const posts = records.map((record) => {
         const post = record.get("p").properties;
@@ -102,19 +97,16 @@ router.get("/post", (req, res, next) => {
         posts,
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.get("/like", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
-  const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (p:Post)<-[:LIKED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
-      { sessionUserID }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+    { sessionUserID }
+  )
     .then(({ records }) => {
       const posts = records.map((record) => {
         const post = record.get("p").properties;
@@ -136,21 +128,18 @@ router.get("/like", (req, res, next) => {
         posts,
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.get("/picture", (req, res, next) => {
   const id = req.user._id;
 
-  const session = neo4jDriver.session();
-  session
-    .run(
-      "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
-      {
-        sessionUserID: id.toString(),
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
+    {
+      sessionUserID: id.toString(),
+    }
+  )
     .then(({ records }) => {
       const pictures = records.map((record) => {
         const pictureNode = record.get("p").properties;
@@ -166,14 +155,18 @@ router.get("/picture", (req, res, next) => {
         message: "apiMyPicturesSuccess",
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.post("/picture", (req, res, next) => {
   const id = req.user._id;
+  const { pictures } = req.body;
 
-  const pictures = req.body.pictures.map((element) => {
+  if (!validateFields(next, { pictures })) {
+    return;
+  }
+
+  const picturesParsed = pictures.map((element) => {
     const id = uuidv4();
 
     return {
@@ -184,25 +177,24 @@ router.post("/picture", (req, res, next) => {
     };
   });
 
-  const session = neo4jDriver.session();
-
-  session
-    .run(
-      "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture:ID {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
-      {
-        sessionUserID: id.toString(),
-        pictures: pictures,
-      }
-    )
+  neo4jQueryWrapper(
+    "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture:ID {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
+    {
+      sessionUserID: id.toString(),
+      pictures: picturesParsed,
+    }
+  )
     .then(({ records }) => {
       records.forEach((record) => {
         const pictureNode = record.get("p").properties;
-        const picture = pictures.filter((pic) => pic.id === pictureNode.id)[0];
+        const picture = picturesParsed.filter(
+          (pic) => pic.id === pictureNode.id
+        )[0];
         saveBase64Picture(picture.picture, picture.base64);
       });
 
       res.status(200).json({
-        pictures: pictures.map((picture) => ({
+        pictures: picturesParsed.map((picture) => ({
           id: picture.id,
           picture: picture.picture,
           private: picture.private,
@@ -210,56 +202,52 @@ router.post("/picture", (req, res, next) => {
         message: "apiMyPicturesSuccess",
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.patch("/avatar", (req, res, next) => {
   const userId = req.user._id;
+  const { filename, avatar } = req.body;
+
+  if (!validateFields(next, { filename, avatar })) {
+    return;
+  }
+
   const picId = uuidv4();
 
-  const reqAvatar = req.body;
-
-  const avatar = {
+  const avatarParsed = {
     id: picId,
-    picture: `/public/pictures/${picId}-${reqAvatar.filename}`,
-    base64: reqAvatar.avatar,
+    picture: `/public/pictures/${picId}-${filename}`,
+    base64: avatar,
   };
 
-  const session = neo4jDriver.session();
-
-  session
-    .run(
-      "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar:ID {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
-      {
-        sessionUserID: userId.toString(),
-        avatar,
-      }
-    )
+  neo4jQueryWrapper(
+    "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar:ID {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
+    {
+      sessionUserID: userId.toString(),
+      avatar: avatarParsed,
+    }
+  )
     .then(({ records: [record] }) => {
       const user = record.get("u").properties;
       user.sessionUserID = undefined;
 
-      saveBase64Picture(avatar.picture, avatar.base64);
+      saveBase64Picture(avatarParsed.picture, avatarParsed.base64);
 
       res.status(200).json({
         user,
         message: "apiMyAvatarSuccess",
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 router.get("/avatar", (req, res, next) => {
   const userId = req.user._id;
 
-  const session = neo4jDriver.session();
-
-  session
-    .run("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
-      sessionUserID: userId.toString(),
-    })
+  neo4jQueryWrapper("MATCH (u:User {sessionUserID: $sessionUserID}) RETURN u", {
+    sessionUserID: userId.toString(),
+  })
     .then(({ records: [record] }) => {
       const userData = record.get("u").properties;
       const avatar = userData.avatar;
@@ -269,8 +257,7 @@ router.get("/avatar", (req, res, next) => {
         message: "apiMyAvatarSuccess",
       });
     })
-    .catch((err) => next(err))
-    .then(() => session.close());
+    .catch((err) => next(err));
 });
 
 module.exports = router;
