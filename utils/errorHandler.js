@@ -13,6 +13,7 @@ const {
   PostError,
   ValidationError,
 } = require("./errors");
+const {ValidationError: ValidationErrorMongoose} = require("mongoose").Error
 
 const logger = require("../config/logger");
 
@@ -32,6 +33,7 @@ module.exports = (err, req, res, next) => {
     err instanceof MissingUsernameError ||
     err instanceof MissingPasswordError ||
     err instanceof MissingCredentialsError ||
+    err instanceof ValidationErrorMongoose ||
     err instanceof ValidationError
   ) {
     sendResponse(err, 422);

@@ -12,7 +12,7 @@ const users = [
       nameLast: "Kowalski",
       nameFirst: "Adam",
       login: "AKowalski",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
@@ -40,7 +40,7 @@ const users = [
       nameLast: "Nowak",
       nameFirst: "Piotr",
       login: "PNowak",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
@@ -68,7 +68,7 @@ const users = [
       nameLast: "Lewandowska",
       nameFirst: "Anna",
       login: "ALewandowska",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
@@ -95,7 +95,7 @@ const users = [
       nameLast: "Lewandowska",
       nameFirst: "Julia",
       login: "JLewandowska",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
@@ -117,7 +117,7 @@ const users = [
       nameLast: "Ostrowski",
       nameFirst: "Robert",
       login: "ROstrowski",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
@@ -139,7 +139,7 @@ const users = [
       nameLast: "Narbut",
       nameFirst: "Gracjan",
       login: "GNarbut",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
@@ -164,7 +164,7 @@ const users = [
       nameLast: "Kowalczyk",
       nameFirst: "Ola",
       login: "OKowalczyk",
-      password: "123",
+      password: "1aX",
       posts: [
         {
           content:
