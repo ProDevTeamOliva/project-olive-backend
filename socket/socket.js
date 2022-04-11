@@ -40,9 +40,9 @@ sio.of(new RegExp(`^/chat/${uuidRegex}$`))
             {sessionUserID, id}
 
         ).then(({records}) => {
-            // if(!records.length) {
-            //     throw new NotFoundError("apiChatNotFoundError")
-            // }
+            if(!records.length) {
+                throw new NotFoundError("apiChatNotFoundError")
+            }
             next()
 
         }).catch(err => next(err))
@@ -53,19 +53,24 @@ sio.of(new RegExp(`^/chat/${uuidRegex}$`))
         socket.on("history", (...args) => {
             const callback = args[args.length-1]
             neo4jQueryWrapper(
-                "MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u2:User) RETURN c, m, collect(u2) AS s ORDER BY m.date DESC",
+                "MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) RETURN c, m, u ORDER BY m.date DESC",
                 {id}
 
             ).then(({records}) => {
-                callback({
-                    messages: [
-                        {
-                            id: "",
-                            message: "test",
-                            user: {}
-                        }
-                    ]
-                })
+                const conversation = records[0].get("c").properties
+                const messages = records.reduce((result, record) => {
+                    const messageNode = record.get("m")
+                    if(messageNode) {
+                        const message = messageNode.properties
+                        const user = record.get("u").properties
+                        user.sessionUserID = undefined
+                        message.user = user
+                        result.push(message)
+                    }
+                    return result
+                }, [])
+                conversation.messages = messages
+                callback(conversation)
             })
         })
     })
