@@ -28,7 +28,7 @@ router.get("/friend", (req, res, next) => {
   const id = req.user._id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) RETURN u2,r",
+    "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User), (u1)-[:JOINED]->(c:Conversation) RETURN u2, r, c",
     {
       sessionUserID: id.toString(),
     }
@@ -36,14 +36,16 @@ router.get("/friend", (req, res, next) => {
     .then(({ records }) => {
       const result = records.reduce(
         (result, record) => {
-          const { u2, r } = record.toObject();
+          const { u2, r, c } = record.toObject();
           const user = u2.properties;
           user.sessionUserID = undefined;
 
           if (r.type === "FRIEND") {
+            user.idConversation = c.id;
             result.friends.push(user);
           } else if (r.type === "PENDING") {
             const u2Identity = u2.identity;
+            user.idConversation = undefined;
 
             if (r.start === u2Identity) {
               result.pendingReceived.push(user);

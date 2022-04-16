@@ -6,9 +6,11 @@ const { authenticationCheck, wrapMiddleware } = require("../utils/middlewares");
 const { neo4jQueryWrapper } = require("../utils/utils");
 const { NotFoundError } = require("../utils/errors");
 
+const { v4: uuidv4 } = require("uuid");
+
 const authenticationCheckWrapped = wrapMiddleware(authenticationCheck);
 
-const getId = (socket) => socket.nsp.name.split("/")[2];
+const getId = (socket) => socket.nsp.name.split("/").at(-1);
 
 sio
   .of("/")
@@ -58,7 +60,7 @@ sio
     const id = getId(socket);
 
     socket.on("history", (...args) => {
-      const callback = args[args.length - 1];
+      const callback = args.at(-1);
       neo4jQueryWrapper(
         "MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) RETURN c, m, u ORDER BY m.date DESC",
         { id }
@@ -78,6 +80,38 @@ sio
         conversation.messages = messages;
         callback(conversation);
       });
+    });
+
+    socket.on("message", (msg) => {
+      const sessionUserID = socket.request.user._id.toString();
+      const conversationID = getId(socket);
+
+      const { message } = JSON.parse(msg);
+
+      neo4jQueryWrapper("MATCH (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message {id: $messageID, message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m", {
+        sessionUserID,
+        conversationID,
+        message,
+        messageID: uuidv4()
+      })
+        .then(({ records: [record] }) => {
+          const { login } = record.get("u").properties;
+          const { message, id: messageId, date } = record.get("m").properties;
+          const { id: conversationId } = record.get("c").properties;
+
+          const messageJson = {
+            login,
+            message,
+            messageId,
+            date,
+            conversationId
+          }
+
+          console.log(messageJson);
+          
+          socket.broadcast.emit("message", JSON.stringify(messageJson));
+        })
+        .catch((err) => logger.error(err));
     });
   });
 
