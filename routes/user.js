@@ -1,7 +1,6 @@
 const router = require("express").Router();
 const { NotFoundError, FriendError } = require("../utils/errors");
 const { neo4jQueryWrapper } = require("../utils/utils");
-const { v4: uuidv4 } = require("uuid");
 
 router.get("/:id", (req, res, next) => {
   const id = req.params.id;
@@ -134,11 +133,10 @@ router.post("/:id/accept", (req, res, next) => {
   const idTargetUser = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation {id: $idConversation, active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation {id: randomUUID(), active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
     {
       sessionUserID: idSource.toString(),
       idTargetUser,
-      idConversation: uuidv4(),
       active: true,
     }
   )

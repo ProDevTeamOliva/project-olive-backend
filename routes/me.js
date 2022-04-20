@@ -41,7 +41,7 @@ router.get("/friend", (req, res, next) => {
           user.sessionUserID = undefined;
 
           if (r.type === "FRIEND") {
-            user.idConversation = c.id;
+            user.idConversation = c.properties.id;
             result.friends.push(user);
           } else if (r.type === "PENDING") {
             const u2Identity = u2.identity;
