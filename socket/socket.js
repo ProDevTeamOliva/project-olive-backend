@@ -6,8 +6,6 @@ const { authenticationCheck, wrapMiddleware } = require("../utils/middlewares");
 const { neo4jQueryWrapper } = require("../utils/utils");
 const { NotFoundError } = require("../utils/errors");
 
-const { v4: uuidv4 } = require("uuid");
-
 const authenticationCheckWrapped = wrapMiddleware(authenticationCheck);
 
 const getId = (socket) => socket.nsp.name.split("/").at(-1);
@@ -89,12 +87,11 @@ sio
       const { message } = JSON.parse(msg);
 
       neo4jQueryWrapper(
-        "MATCH (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message {id: $messageID, message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
+        "MATCH (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message {id: randomUUID(), message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
         {
           sessionUserID,
           conversationID,
           message,
-          messageID: uuidv4(),
         }
       )
         .then(({ records: [record] }) => {
@@ -109,8 +106,6 @@ sio
             date,
             conversationId,
           };
-
-          console.log(messageJson);
 
           socket.broadcast.emit("message", JSON.stringify(messageJson));
         })
