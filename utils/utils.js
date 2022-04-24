@@ -4,7 +4,12 @@ const driver = require("../config/neo4jDriver");
 const { ValidationError } = require("./errors");
 const { validateString, validateArray } = require("./validators");
 
-function saveBase64Picture(filepath, image) {
+const getBase64SizeInBytes = (image) => {
+  const buffer = Buffer.from(image.substring(image.indexOf(",") + 1));
+  return buffer.length;
+};
+
+const saveBase64Picture = (filepath, image) => {
   image = image.split("base64,")[1];
 
   fs.writeFile("." + filepath, image, { encoding: "base64" }, function (err) {
@@ -12,7 +17,7 @@ function saveBase64Picture(filepath, image) {
       logger.info(err);
     }
   });
-}
+};
 
 const neo4jQueryWrapper = (query, parameters) => {
   const session = driver.session();
@@ -37,6 +42,7 @@ const validationSetup = {
   filename: () => true,
   avatar: () => true,
 };
+
 const validateFields = (next, fields) => {
   if (
     Object.entries(fields).every(([key, value]) => {
@@ -51,4 +57,4 @@ const validateFields = (next, fields) => {
   }
 };
 
-module.exports = { saveBase64Picture, neo4jQueryWrapper, validateFields };
+module.exports = { getBase64SizeInBytes, saveBase64Picture, neo4jQueryWrapper, validateFields };

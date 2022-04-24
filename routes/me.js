@@ -4,6 +4,7 @@ const {
   neo4jQueryWrapper,
   validateFields,
 } = require("../utils/utils.js");
+const { validatePicturesSize } = require("../utils/validators");
 const { v4: uuidv4 } = require("uuid");
 
 router.get("/", (req, res, next) => {
@@ -165,6 +166,10 @@ router.post("/picture", (req, res, next) => {
   const { pictures } = req.body;
 
   if (!validateFields(next, { pictures })) {
+    return;
+  }
+
+  if (!validatePicturesSize(next, { pictures })) {
     return;
   }
 

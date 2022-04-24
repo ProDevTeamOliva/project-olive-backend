@@ -12,6 +12,7 @@ const {
   FriendError,
   PostError,
   ValidationError,
+  EntityError,
 } = require("./errors");
 const { ValidationError: ValidationErrorMongoose } = require("mongoose").Error;
 
@@ -45,6 +46,12 @@ module.exports = (err, req, res, next) => {
     sendResponse(err, 403);
   } else if (err instanceof FriendError || err instanceof PostError) {
     sendResponse(err, 400);
+  } else if (err instanceof EntityError) {
+    if (err.message == "apiEntityTooLarge") {
+      res.status(413).json({ message: "apiEntityTooLarge" });
+    } else {
+      res.status(413).json({ message: "apiEntityError" });
+    }
   } else {
     console.dir(err);
     res.status(500).json({ message: "apiUnknownError" });

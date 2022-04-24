@@ -18,6 +18,7 @@ const missingCredentialsError = "MissingCredentialsError";
 const friendError = "FriendError";
 const postError = "PostError";
 const validationError = "ValidationError";
+const entityError = "EntityError";
 
 module.exports = {
   [notFoundError]: createError(notFoundError),
@@ -25,4 +26,5 @@ module.exports = {
   [friendError]: createError(friendError),
   [postError]: createError(postError),
   [validationError]: createError(validationError),
+  [entityError]: createError(entityError)
 };
