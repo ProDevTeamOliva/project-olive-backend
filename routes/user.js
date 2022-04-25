@@ -204,31 +204,12 @@ router.get("/:id/picture", (req, res, next) => {
 });
 
 router.get("/", (req, res, next) => {
-  neo4jQueryWrapper("MATCH (u:User) RETURN u")
-    .then(({ records }) => {
-      const users = records.map((record) => {
-        const user = record.get(record.keys[0]).properties;
-        user.sessionUserID = undefined;
-        return user;
-      });
-      res.status(200).json({
-        users,
-        message: "apiUsersSuccess",
-      });
-    })
-    .catch((err) => next(err));
-});
-
-router.get("/search/:value", (req, res, next) => {
-  const searchValue = req.params.value.toString().toLowerCase();
   const sessionUserID = req.user._id.toString();
+  const name = (req.query.name ?? "").toLowerCase()
 
   neo4jQueryWrapper(
-    "MATCH (u:User ) WHERE (toLower(u.nameFirst) CONTAINS $searchValue OR toLower(u.nameLast) CONTAINS $searchValue) AND NOT u.sessionUserID=$sessionUserID  RETURN u LIMIT 15",
-    {
-      sessionUserID,
-      searchValue,
-    }
+    `MATCH (u:User) ${name.length ? "WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $name OR nf STARTS WITH $name OR nl STARTS WITH $name)": ""} RETURN u LIMIT 15`,
+    {name, sessionUserID}
   )
     .then(({ records }) => {
       const users = records.map((record) => {

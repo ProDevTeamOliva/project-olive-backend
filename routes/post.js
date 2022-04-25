@@ -8,41 +8,10 @@ const { v4: uuidv4 } = require("uuid");
 const { PostError, NotFoundError } = require("../utils/errors");
 
 router.get("/", (req, res, next) => {
-  neo4jQueryWrapper(
-    "MATCH (p:Post)<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc"
-  )
-    .then(({ records }) => {
-      const posts = records.map((record) => {
-        const post = record.get("p").properties;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
-        post.user = user;
-
-        post.likes = record.get("l").map((l) => {
-          const properties = l.properties;
-          properties.sessionUserID = undefined;
-          return properties;
-        });
-
-        return post;
-      });
-
-      res.status(200).json({
-        message: "apiPostsSuccess",
-        posts,
-      });
-    })
-    .catch((err) => next(err));
-});
-
-router.get("/search/:tag", (req, res, next) => {
-  const tag = req.params.tag.toString();
+  const tag = req.query.tag ?? ""
 
   neo4jQueryWrapper(
-    "MATCH (p:Post)<-[:POSTED]-(u:User) WHERE $tag IN p.tags optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
-    {
-      tag,
-    }
+    `MATCH (p:Post)<-[:POSTED]-(u:User) ${tag.length ? "WHERE $tag IN p.tags" : ""} optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc`, {tag}
   )
     .then(({ records }) => {
       const posts = records.map((record) => {
