@@ -16,10 +16,8 @@ const app = require("./config/express");
 
 const picturesDir = "public/pictures";
 
-if (!fs.existsSync(`./${picturesDir}`)) {
-  throw Error(
-    `No public directory. Please create ./${picturesDir} directory inside project root!`
-  );
+if (!fs.existsSync(picturesDir)) {
+  fs.mkdirSync(picturesDir, { recursive: true });
 }
 
 app.use(cors({ credentials: true, origin: originHost }));
