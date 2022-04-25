@@ -8,10 +8,13 @@ const { v4: uuidv4 } = require("uuid");
 const { PostError, NotFoundError } = require("../utils/errors");
 
 router.get("/", (req, res, next) => {
-  const tag = req.query.tag ?? ""
+  const tag = req.query.tag ?? "";
 
   neo4jQueryWrapper(
-    `MATCH (p:Post)<-[:POSTED]-(u:User) ${tag.length ? "WHERE $tag IN p.tags" : ""} optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc`, {tag}
+    `MATCH (p:Post)<-[:POSTED]-(u:User) ${
+      tag.length ? "WHERE $tag IN p.tags" : ""
+    } optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc`,
+    { tag }
   )
     .then(({ records }) => {
       const posts = records.map((record) => {
@@ -79,22 +82,21 @@ router.post("/", (req, res, next) => {
 });
 
 router.get("/tag", (req, res, next) => {
-
-  const tag = req.query.tag ?? ""
+  const tag = req.query.tag ?? "";
 
   neo4jQueryWrapper(
     "MATCH (p:Post{type:$type}) UNWIND p.tags as t WITH t WHERE t STARTS WITH $tag RETURN DISTINCT t ORDER BY t LIMIT 15",
-    {type: "Public", tag}
+    { type: "Public", tag }
   )
-    .then(({records}) => {
-      const tags = records.map(record => record.get("t"))
+    .then(({ records }) => {
+      const tags = records.map((record) => record.get("t"));
       res.status(200).json({
         message: "apiTagsSearchSuccess",
-        tags
-      })
+        tags,
+      });
     })
-    .catch((err) => next(err))
-})
+    .catch((err) => next(err));
+});
 
 router.get("/:id", (req, res, next) => {
   const id = req.params.id;

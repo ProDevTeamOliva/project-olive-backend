@@ -205,11 +205,15 @@ router.get("/:id/picture", (req, res, next) => {
 
 router.get("/", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
-  const name = (req.query.name ?? "").toLowerCase()
+  const name = (req.query.name ?? "").toLowerCase();
 
   neo4jQueryWrapper(
-    `MATCH (u:User) ${name.length ? "WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $name OR nl STARTS WITH $name OR nf STARTS WITH $name)": ""} RETURN u LIMIT 15`,
-    {name, sessionUserID}
+    `MATCH (u:User) ${
+      name.length
+        ? "WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $name OR nl STARTS WITH $name OR nf STARTS WITH $name)"
+        : ""
+    } RETURN u LIMIT 15`,
+    { name, sessionUserID }
   )
     .then(({ records }) => {
       const users = records.map((record) => {

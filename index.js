@@ -17,7 +17,7 @@ const app = require("./config/express");
 const picturesDir = "public/pictures";
 
 if (!fs.existsSync(picturesDir)) {
-  fs.mkdirSync(picturesDir, {recursive: true})
+  fs.mkdirSync(picturesDir, { recursive: true });
 }
 
 app.use(cors({ credentials: true, origin: originHost }));
