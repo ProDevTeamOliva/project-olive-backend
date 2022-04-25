@@ -208,7 +208,7 @@ router.get("/", (req, res, next) => {
   const name = (req.query.name ?? "").toLowerCase()
 
   neo4jQueryWrapper(
-    `MATCH (u:User) ${name.length ? "WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $name OR nf STARTS WITH $name OR nl STARTS WITH $name)": ""} RETURN u LIMIT 15`,
+    `MATCH (u:User) ${name.length ? "WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $name OR nl STARTS WITH $name OR nf STARTS WITH $name)": ""} RETURN u LIMIT 15`,
     {name, sessionUserID}
   )
     .then(({ records }) => {
