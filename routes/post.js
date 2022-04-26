@@ -82,17 +82,17 @@ router.post("/", (req, res, next) => {
 });
 
 router.get("/tag", (req, res, next) => {
-  const tag = req.query.tag ?? "";
+  const tagPart = req.query.tagPart ?? "";
 
   neo4jQueryWrapper(
-    "MATCH (p:Post{type:$type}) UNWIND p.tags as t WITH t WHERE t STARTS WITH $tag RETURN DISTINCT t ORDER BY t LIMIT 15",
-    { type: "Public", tag }
+    "MATCH (p:Post{type:$type}) UNWIND p.tags as t WITH t WHERE t STARTS WITH $tagPart RETURN DISTINCT t ORDER BY t LIMIT 15",
+    { type: "Public", tagPart }
   )
     .then(({ records }) => {
       const tags = records.map((record) => record.get("t"));
       res.status(200).json({
         message: "apiTagsSearchSuccess",
-        tags,
+        payload: tags,
       });
     })
     .catch((err) => next(err));
