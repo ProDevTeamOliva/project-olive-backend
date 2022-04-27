@@ -169,7 +169,7 @@ router.post("/picture", (req, res, next) => {
     return;
   }
 
-  if (!validatePicturesSize(next, { pictures })) {
+  if (!validatePicturesSize(next, pictures)) {
     return;
   }
 
