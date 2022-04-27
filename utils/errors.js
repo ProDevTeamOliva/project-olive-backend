@@ -26,5 +26,5 @@ module.exports = {
   [friendError]: createError(friendError),
   [postError]: createError(postError),
   [validationError]: createError(validationError),
-  [entityError]: createError(entityError)
+  [entityError]: createError(entityError),
 };

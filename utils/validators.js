@@ -19,12 +19,14 @@ const validatePicturesSize = (next, picturesArray) => {
   const isSizeRight = picturesArray.reduce((result, picture) => {
     if (!result) return false;
 
-    const buffer = Buffer.from(picture.picture.substring(picture.picture.indexOf(",") + 1));
+    const buffer = Buffer.from(
+      picture.picture.substring(picture.picture.indexOf(",") + 1)
+    );
 
     if (buffer.length / 1e6 <= 3) {
       return true;
     }
-    
+
     return false;
   }, true);
 
