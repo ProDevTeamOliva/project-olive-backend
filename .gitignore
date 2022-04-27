@@ -3,3 +3,4 @@ node_modules/
 public/pictures/*
 !public/pictures/avatar_default.png
 logs
+.jshintrc

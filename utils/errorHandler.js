@@ -12,8 +12,10 @@ const {
   FriendError,
   PostError,
   ValidationError,
+  EntityError,
 } = require("./errors");
 const { ValidationError: ValidationErrorMongoose } = require("mongoose").Error;
+const { PayloadTooLarge } = require("http-errors");
 
 const logger = require("../config/logger");
 
@@ -45,6 +47,10 @@ module.exports = (err, req, res, next) => {
     sendResponse(err, 403);
   } else if (err instanceof FriendError || err instanceof PostError) {
     sendResponse(err, 400);
+  } else if (err instanceof PayloadTooLarge) {
+    sendResponse(err, 413);
+  } else if (err instanceof EntityError) {
+    sendResponse(err, 413);
   } else {
     console.dir(err);
     res.status(500).json({ message: "apiUnknownError" });
