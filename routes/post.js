@@ -85,8 +85,8 @@ router.get("/tag", (req, res, next) => {
   const tagPart = req.query.tagPart ?? "";
 
   neo4jQueryWrapper(
-    "MATCH (p:Post{type:$type}) UNWIND p.tags as t WITH t WHERE t STARTS WITH $tagPart RETURN DISTINCT t ORDER BY t LIMIT 15",
-    { type: "Public", tagPart }
+    "MATCH (p:Post) UNWIND p.tags as t WITH t WHERE t STARTS WITH $tagPart RETURN DISTINCT t ORDER BY t LIMIT 15",
+    { type: "public", tagPart }
   )
     .then(({ records }) => {
       const tags = records.map((record) => record.get("t"));
