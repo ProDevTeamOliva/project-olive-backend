@@ -29,7 +29,7 @@ router.get("/friend", (req, res, next) => {
   const id = req.user._id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User), (u1)-[:JOINED]->(c:Conversation) RETURN u2, r, c",
+    "MATCH (u1:User {sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User) OPTIONAL MATCH (u1)-[:JOINED]->(c:Conversation)<-[:JOINED]-(u2) RETURN u2, r, c",
     {
       sessionUserID: id.toString(),
     }
