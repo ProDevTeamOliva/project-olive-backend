@@ -57,26 +57,73 @@ sio
   .on("connection", (socket) => {
     const id = getId(socket);
 
+    socket.on("info", (...args) => {
+      const callback = args.at(-1);
+      neo4jQueryWrapper(
+        "MATCH (c:Conversation{id:$id})<-[:JOINED]-(u:User) RETURN c, u",
+        { id }
+      ).then(({ records }) => {
+        const { id: conversationId } = records[0].get("c").properties;
+        const users = records.reduce((result, record) => {
+          const {
+            id: userId,
+            login: userLogin,
+            nameFirst: userNameFirst,
+            nameLast: userNameLast,
+            avatar: userAvatar,
+          } = record.get("u").properties;
+          return [
+            ...result,
+            {
+              id: userId,
+              login: userLogin,
+              nameFirst: userNameFirst,
+              nameLast: userNameLast,
+              avatar: userAvatar,
+            },
+          ];
+        }, []);
+        callback({ conversationId, users });
+      });
+    });
+
     socket.on("history", (...args) => {
       const callback = args.at(-1);
       neo4jQueryWrapper(
-        "MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) RETURN c, m, u ORDER BY m.date DESC",
+        "MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) RETURN c, m, u ORDER BY m.date",
         { id }
       ).then(({ records }) => {
-        const conversation = records[0].get("c").properties;
+        const { id: conversationId } = records[0].get("c").properties;
         const messages = records.reduce((result, record) => {
-          const messageNode = record.get("m");
-          if (messageNode) {
-            const message = messageNode.properties;
-            const user = record.get("u").properties;
-            user.sessionUserID = undefined;
-            message.user = user;
-            result.push(message);
+          if (record.get("m")) {
+            const {
+              id: userId,
+              login: userLogin,
+              nameFirst: userNameFirst,
+              nameLast: userNameLast,
+              avatar: userAvatar,
+            } = record.get("u").properties;
+            const { message, id: messageId, date } = record.get("m").properties;
+
+            const messageJson = {
+              user: {
+                id: userId,
+                login: userLogin,
+                nameFirst: userNameFirst,
+                nameLast: userNameLast,
+                avatar: userAvatar,
+              },
+              message,
+              messageId,
+              date,
+              conversationId,
+            };
+
+            result.push(messageJson);
           }
           return result;
         }, []);
-        conversation.messages = messages;
-        callback(conversation);
+        callback({ messages });
       });
     });
 
@@ -84,7 +131,7 @@ sio
       const sessionUserID = socket.request.user._id.toString();
       const conversationID = getId(socket);
 
-      const { message } = JSON.parse(msg);
+      const { message } = msg;
 
       neo4jQueryWrapper(
         "MATCH (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message {id: randomUUID(), message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
@@ -95,19 +142,32 @@ sio
         }
       )
         .then(({ records: [record] }) => {
-          const { login } = record.get("u").properties;
+          const {
+            id: userId,
+            login: userLogin,
+            nameFirst: userNameFirst,
+            nameLast: userNameLast,
+            avatar: userAvatar,
+          } = record.get("u").properties;
           const { message, id: messageId, date } = record.get("m").properties;
           const { id: conversationId } = record.get("c").properties;
 
           const messageJson = {
-            login,
+            user: {
+              id: userId,
+              login: userLogin,
+              nameFirst: userNameFirst,
+              nameLast: userNameLast,
+              avatar: userAvatar,
+            },
             message,
             messageId,
             date,
             conversationId,
           };
 
-          socket.broadcast.emit("message", JSON.stringify(messageJson));
+          socket.emit("message", messageJson);
+          socket.broadcast.emit("message", messageJson);
         })
         .catch((err) => logger.error(err));
     });
