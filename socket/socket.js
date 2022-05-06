@@ -8,7 +8,7 @@ const { NotFoundError } = require("../utils/errors");
 
 const authenticationCheckWrapped = wrapMiddleware(authenticationCheck);
 
-const getId = (socket) => socket.nsp.name.split("/").at(-1);
+const getId = (socket) => socket.nsp.name.split("/").slice(-1)[0];
 
 sio
   .of("/")
@@ -58,7 +58,7 @@ sio
     const id = getId(socket);
 
     socket.on("info", (...args) => {
-      const callback = args.at(-1);
+      const callback = args.slice(-1)[0];
       neo4jQueryWrapper(
         "MATCH (c:Conversation{id:$id})<-[:JOINED]-(u:User) RETURN c, u",
         { id }
@@ -88,7 +88,7 @@ sio
     });
 
     socket.on("history", (...args) => {
-      const callback = args.at(-1);
+      const callback = args.slice(-1)[0];
       neo4jQueryWrapper(
         "MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) RETURN c, m, u ORDER BY m.date",
         { id }

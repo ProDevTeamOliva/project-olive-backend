@@ -3,7 +3,11 @@ const router = require("express").Router();
 const SessionUser = require("../models/SessionUser");
 const { authenticationCheck } = require("../utils/middlewares");
 const { MissingCredentialsError } = require("../utils/errors");
-const { neo4jQueryWrapper, validateFields } = require("../utils/utils");
+const {
+  neo4jQueryWrapper,
+  validateFields,
+  disconnectSessionSockets,
+} = require("../utils/utils");
 
 router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
@@ -73,12 +77,33 @@ router.post("/login", (req, res, next) => {
   )(req, res, next);
 });
 
-router.post("/logout", authenticationCheck, (req, res) => {
-  req.logout();
-  req.session.destroy(() => {
-    res.clearCookie("connect.sid");
-    res.status(200).json({ message: "apiLogoutSuccess" });
-  });
+router.post("/logout", authenticationCheck, (req, res, next) => {
+  const sessionUserID = req.user._id.toString();
+  const { sessionID } = req;
+
+  neo4jQueryWrapper(
+    "MATCH (u:User{sessionUserID:$sessionUserID})-[:JOINED]->(c:Conversation) WITH u, collect(c) AS cl RETURN u, cl",
+    {
+      sessionUserID,
+    }
+  )
+    .then(({ records: [record] }) => {
+      const user = record.get("u").properties;
+      const conversations = record.get("cl");
+      return Promise.all([
+        disconnectSessionSockets(`/user/${user.id}`, sessionID),
+        ...conversations.map(({ properties: conversation }) =>
+          disconnectSessionSockets(`/chat/${conversation.id}`, sessionID)
+        ),
+      ]);
+    })
+    .then(() => {
+      req.logout();
+      req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+        res.status(200).json({ message: "apiLogoutSuccess" });
+      });
+    });
 });
 
 module.exports = router;
