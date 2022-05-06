@@ -6,8 +6,8 @@ axios.defaults.withCredentials = true;
 
 const SessionUser = require("./models/SessionUser");
 const { neo4jQueryWrapper } = require("./utils/utils");
-const store = require("./config/mongoStore")
-const fs = require("fs")
+const store = require("./config/mongoStore");
+const fs = require("fs");
 
 const users = [
   {
@@ -174,24 +174,24 @@ const users = [
   },
 ];
 
-const avatar = "avatar_default.png"
-const pics = "public/pictures"
+const avatar = "avatar_default.png";
+const pics = "public/pictures";
 
 const fillDatabase = async () => {
-  await store.collectionP.then(sessions => sessions.deleteMany())
+  await store.collectionP.then((sessions) => sessions.deleteMany());
   console.log("Cleared sessions from MongoDB");
   await SessionUser.deleteMany();
   console.log("Cleared SessionUsers from MongoDB");
   await neo4jQueryWrapper("MATCH (n) DETACH DELETE n");
   console.log("Cleared Neo4J");
 
-  const temp = fs.mkdtempSync("chattermatter")
-  fs.renameSync(`${pics}/${avatar}`, `${temp}/${avatar}`)
-  fs.rmSync(pics, {recursive: true})
-  fs.mkdirSync(pics)
-  fs.renameSync(`${temp}/${avatar}`, `${pics}/${avatar}`)
-  fs.rmdirSync(temp)
-  console.log("Cleared pictures")
+  const temp = fs.mkdtempSync("chattermatter");
+  fs.renameSync(`${pics}/${avatar}`, `${temp}/${avatar}`);
+  fs.rmSync(pics, { recursive: true });
+  fs.mkdirSync(pics);
+  fs.renameSync(`${temp}/${avatar}`, `${pics}/${avatar}`);
+  fs.rmdirSync(temp);
+  console.log("Cleared pictures");
 
   for (let i = 0; i < users.length; i++) {
     const user = users[i];

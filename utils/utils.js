@@ -3,7 +3,7 @@ const logger = require("../config/logger");
 const driver = require("../config/neo4jDriver");
 const { ValidationError } = require("./errors");
 const { validateString, validateArray } = require("./validators");
-const sio = require("../config/socket")
+const sio = require("../config/socket");
 
 const saveBase64Picture = (filepath, image) => {
   image = image.split("base64,")[1];
@@ -28,13 +28,17 @@ const neo4jQueryWrapper = (query, parameters) => {
   );
 };
 
-const disconnectSessionSockets = (namespace, sessionID) => sio.of(namespace)
-  .fetchSockets()
-  .then(sockets => sockets.forEach(socket => {
-    if(socket.client.conn.request.sessionID === sessionID) {
-      socket.disconnect()
-    }
-  }))
+const disconnectSessionSockets = (namespace, sessionID) =>
+  sio
+    .of(namespace)
+    .fetchSockets()
+    .then((sockets) =>
+      sockets.forEach((socket) => {
+        if (socket.client.conn.request.sessionID === sessionID) {
+          socket.disconnect();
+        }
+      })
+    );
 
 const validationSetup = {
   nameFirst: validateString(),
@@ -61,4 +65,9 @@ const validateFields = (next, fields) => {
   }
 };
 
-module.exports = { saveBase64Picture, neo4jQueryWrapper, validateFields, disconnectSessionSockets };
+module.exports = {
+  saveBase64Picture,
+  neo4jQueryWrapper,
+  validateFields,
+  disconnectSessionSockets,
+};
