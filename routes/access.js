@@ -82,7 +82,7 @@ router.post("/logout", authenticationCheck, (req, res, next) => {
   const { sessionID } = req;
 
   neo4jQueryWrapper(
-    "MATCH (u:User{sessionUserID:$sessionUserID})-[:JOINED]->(c:Conversation) WITH u, collect(c) AS cl RETURN u, cl",
+    "MATCH (u:User{sessionUserID:$sessionUserID}) OPTIONAL MATCH (u)-[:JOINED]->(c:Conversation) WITH u, collect(c) AS cl RETURN u, cl",
     {
       sessionUserID,
     }
