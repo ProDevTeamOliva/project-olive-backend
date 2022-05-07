@@ -211,7 +211,7 @@ router.get("/:id/comment", (req, res, next) => {
       if (!records) {
         throw new PostError("apiCommentsGetError");
       }
-      
+
       const comments = records.map((record) => {
         const postId = record.get("p").properties.id;
         const user = record.get("u").properties;
@@ -226,7 +226,7 @@ router.get("/:id/comment", (req, res, next) => {
 
       res.status(200).json({
         message: "apiCommentsGetSuccess",
-        comments
+        comments,
       });
     })
     .catch((err) => next(err));
