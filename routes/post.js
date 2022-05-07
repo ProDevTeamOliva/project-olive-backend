@@ -197,6 +197,41 @@ router.delete("/:id/like", (req, res, next) => {
     .catch((err) => next(err));
 });
 
+router.get("/:id/comment", (req, res, next) => {
+  const idSource = req.user._id;
+  const idTarget = req.params.id;
+
+  neo4jQueryWrapper(
+    "MATCH (u:User)-[:COMMENTED]->(c:Comment)-[:UNDER]->(p:Post{id: $idPost}) RETURN u, c, p",
+    {
+      idPost: idTarget,
+    }
+  )
+    .then(({ records }) => {
+      if (!records) {
+        throw new PostError("apiCommentsGetError");
+      }
+      
+      const comments = records.map((record) => {
+        const postId = record.get("p").properties.id;
+        const user = record.get("u").properties;
+        user.sessionUserID = undefined;
+
+        const comment = record.get("c").properties;
+        comment.postId = postId;
+        comment.user = user;
+
+        return comment;
+      });
+
+      res.status(200).json({
+        message: "apiCommentsGetSuccess",
+        comments
+      });
+    })
+    .catch((err) => next(err));
+});
+
 router.post("/:id/comment", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
@@ -239,7 +274,7 @@ router.delete("/:id/comment", (req, res, next) => {
   const idComment = req.body.id;
 
   neo4jQueryWrapper(
-    "MATCH (u:User{sessionUserID: $sessionUserID})-[r1:COMMENTED]->(c:Comment {id: $idComment})-[r2:UNDER]->(p:Post{id: $idPost}) DELETE r1, r2, c RETURN u, c, ,p",
+    "MATCH (u:User{sessionUserID: $sessionUserID})-[r1:COMMENTED]->(c:Comment {id: $idComment})-[r2:UNDER]->(p:Post{id: $idPost}) DELETE r1, r2, c RETURN u, c, p",
     {
       sessionUserID: idSource.toString(),
       idPost: idTarget,
