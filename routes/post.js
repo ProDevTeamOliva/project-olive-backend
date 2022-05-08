@@ -61,6 +61,10 @@ router.post("/", (req, res, next) => {
     return;
   }
 
+  if (!validatePicturesSize(next, pictures)) {
+    return;
+  }
+
   const picturesParsed = (pictures ?? []).map(
     (element) => `/${picturesDir}/${uuidv4()}-${element.filename}`
   );
