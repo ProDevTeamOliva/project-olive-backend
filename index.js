@@ -21,7 +21,7 @@ if (!fs.existsSync(picturesDir)) {
 
 app.use(cors({ credentials: true, origin: originHost }));
 
-app.use(bodyParser.json({ limit: "15mb" }));
+app.use(bodyParser.json({ limit: "15MB" }));
 app.use(express.json());
 app.use(cookieParser());
 

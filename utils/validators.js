@@ -23,7 +23,7 @@ const validatePicturesSize = (next, picturesArray) => {
       picture.picture.substring(picture.picture.indexOf(",") + 1)
     );
 
-    if (buffer.length / 1e6 <= 3) {
+    if (buffer.length <= 3 * 1024 * 1024) {
       return true;
     }
 
