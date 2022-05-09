@@ -146,7 +146,7 @@ router.get("/picture", (req, res, next) => {
   const id = req.user._id;
 
   neo4jQueryWrapper(
-    "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) RETURN p",
+    "MATCH (u: User {sessionUserID: $sessionUserID})-[r:UPLOADED]->(p:Picture) WHERE NOT (p)-[:ATTACHED]->(:Post) RETURN p",
     {
       sessionUserID: id.toString(),
     }

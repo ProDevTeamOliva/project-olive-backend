@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require("uuid");
 const { PostError, NotFoundError } = require("../utils/errors");
 const { parseIdQuery, parseIdParam } = require("../utils/middlewares");
 const { picturesDir } = require("../utils/constants");
+const dirPrefix = `/${picturesDir}/`;
 
 router.get("/", parseIdQuery, (req, res, next) => {
   const tag = req.query.tag ?? "";
@@ -26,9 +27,10 @@ router.get("/", parseIdQuery, (req, res, next) => {
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post)<-[:POSTED]-(u:User) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1)))) ${
       whereSetup.length > 1 ? whereSetup.join(" AND ") : ""
     }
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p)
     OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, collect(u2) AS u2l, count(c) AS c
-    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, collect(u2) AS u2l, count(c) AS c, collect(pic) AS pic
+    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c, pic ORDER BY p.date DESC LIMIT 15`,
     { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )
     .then(({ records }) => {
@@ -41,6 +43,8 @@ router.get("/", parseIdQuery, (req, res, next) => {
         post.likes = record.get("l");
         post.likesMe = record.get("lm");
         post.comments = record.get("c");
+
+        post.pictures = record.get("pic").map(pic => pic.properties.picture);
 
         return post;
       });
@@ -65,17 +69,28 @@ router.post("/", (req, res, next) => {
     return;
   }
 
-  const picturesParsed = (pictures ?? []).map(
-    (element) => `/${picturesDir}/${uuidv4()}-${element.filename}`
-  );
+  const picturesParsed = (pictures ?? []).map((element) => ({
+    private: false,
+    base64: element.picture,
+    dirSuffix: `-${element.filename}`
+  }));
 
   neo4jQueryWrapper(
-    "MATCH (pc:PostCounter), (u:User{sessionUserID:$sessionUserID}) CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next MERGE (u)-[:POSTED]->(p:Post{id: next, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) RETURN p, u",
+    `MATCH (pc:PostCounter), (u:User{sessionUserID:$sessionUserID})
+    CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next
+    MERGE (u)-[:POSTED]->(p:Post{id: next, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures})
+    UNWIND $pictures as picture WITH p, u, picture, $dirPrefix + randomUUID() + picture.dirSuffix AS dir
+    MATCH (picC:PictureCounter)
+    CALL apoc.atomic.add(picC,'next',1) YIELD oldValue AS next
+    CREATE (u)-[:UPLOADED]->(pic:Picture {id: next, private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
+    WITH p, u, collect(pic) as pic
+    RETURN p, u, pic`,
     {
       content,
       sessionUserID,
       tags,
       type,
+      dirPrefix,
       pictures: picturesParsed,
     }
   )
@@ -83,12 +98,13 @@ router.post("/", (req, res, next) => {
       const post = {
         ...record.get("p").properties,
         user: record.get("u").properties,
+        pictures: record.get("pic").map((record, index) => {
+          const picture = record.properties.picture;
+          saveBase64Picture(picture, picturesParsed[index].base64);
+          return picture;
+        })
       };
       post.user.sessionUserID = undefined;
-
-      for (const [index, filePath] of picturesParsed.entries()) {
-        saveBase64Picture(filePath, pictures[index].picture);
-      }
 
       res.status(201).json({
         message: "apiPostCreateSuccess",
@@ -130,10 +146,10 @@ router.get("/:id", parseIdParam, (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post {id: $id})<-[:POSTED]-(u:User)
     WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1))))
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
-    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    WITH p,u,u1, collect(u2) AS u2l, count(c) AS c
-    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c`,
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p) WITH p, u, u1, collect(pic) as pic
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, pic, collect(u2) AS u2l
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH p, u, u1, pic, u2l, count(c) AS c
+    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c, pic`,
     {
       id,
       sessionUserID,
@@ -154,6 +170,8 @@ router.get("/:id", parseIdParam, (req, res, next) => {
       post.likesMe = record.get("lm");
       post.comments = record.get("c");
 
+      post.pictures = record.get("pic").map(pic => pic.properties.picture);
+
       res.status(200).json({
         post,
         message: "apiPostFoundSuccess",
@@ -167,7 +185,7 @@ router.delete("/:id", parseIdParam, (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
-    "MATCH (p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) DETACH DELETE p RETURN p",
+    "MATCH (pic:Picture)-[:ATTACHED]->(p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) DETACH DELETE p, pic RETURN p",
     {
       id,
       sessionUserID,
