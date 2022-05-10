@@ -182,8 +182,9 @@ const fillDatabase = async () => {
   console.log("Cleared sessions from MongoDB");
   await SessionUser.deleteMany();
   console.log("Cleared SessionUsers from MongoDB");
-  await neo4jQueryWrapper("MATCH (n) DETACH DELETE n");
-  await neo4jQueryWrapper("CREATE (c:Counter {post: 0}) RETURN c");
+  await neo4jQueryWrapper('MATCH (n) WHERE NOT $label IN labels(n) DETACH DELETE n', {
+    label: "Counter"
+  });
   console.log("Cleared Neo4J");
 
   const temp = fs.mkdtempSync("chattermatter");
