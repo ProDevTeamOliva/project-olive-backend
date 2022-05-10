@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const neo4j = require("neo4j-driver")
+const neo4j = require("neo4j-driver");
 const {
   saveBase64Picture,
   neo4jQueryWrapper,
@@ -12,12 +12,12 @@ router.get("/", (req, res, next) => {
   const tag = req.query.tag ?? "";
   const id = req.query.id ?? "";
 
-  const whereSetup = []
-  if(id.length) {
-    whereSetup.push("p.id < toInteger($id)")
+  const whereSetup = [];
+  if (id.length) {
+    whereSetup.push("p.id < toInteger($id)");
   }
-  if(tag.length) {
-    whereSetup.push("$tag IN p.tags")
+  if (tag.length) {
+    whereSetup.push("$tag IN p.tags");
   }
 
   neo4jQueryWrapper(
