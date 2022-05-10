@@ -23,7 +23,7 @@ router.get("/", (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (p:Post)<-[:POSTED]-(u:User) ${
       whereSetup.length ? `WHERE ${whereSetup.join(" AND ")}` : ""
-    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 3`,
+    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     { tag, id }
   )
     .then(({ records }) => {
