@@ -133,7 +133,7 @@ router.post("/:id/accept", (req, res, next) => {
   const idTargetUser = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation {id: randomUUID(), active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation:ID {id: randomUUID(), active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
     {
       sessionUserID: idSource.toString(),
       idTargetUser,

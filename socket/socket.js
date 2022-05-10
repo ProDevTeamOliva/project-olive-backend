@@ -134,7 +134,7 @@ sio
       const { message } = msg;
 
       neo4jQueryWrapper(
-        "MATCH (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message {id: randomUUID(), message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
+        "MATCH (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message:ID {id: randomUUID(), message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
         {
           sessionUserID,
           conversationID,

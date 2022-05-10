@@ -63,7 +63,7 @@ router.post("/", (req, res, next) => {
   );
 
   neo4jQueryWrapper(
-    "MATCH (c:Counter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:c.post, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.post=c.post+1 return p, u",
+    "MATCH (c:Counter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post{id:c.post, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.post=c.post+1 return p, u",
     {
       content,
       sessionUserID,
@@ -248,7 +248,7 @@ router.post("/:id/comment", (req, res, next) => {
   const comment = req.body.comment;
 
   neo4jQueryWrapper(
-    "MATCH (u:User{sessionUserID: $sessionUserID}) MATCH (p:Post{id: $idPost}) CREATE (u)-[:COMMENTED]->(c:Comment {id: randomUUID(), date: datetime(), comment: $comment})-[:UNDER]->(p) RETURN u, c, p",
+    "MATCH (u:User{sessionUserID: $sessionUserID}) MATCH (p:Post{id: $idPost}) CREATE (u)-[:COMMENTED]->(c:Comment:ID {id: randomUUID(), date: datetime(), comment: $comment})-[:UNDER]->(p) RETURN u, c, p",
     {
       sessionUserID: idSource.toString(),
       idPost: idTarget,
