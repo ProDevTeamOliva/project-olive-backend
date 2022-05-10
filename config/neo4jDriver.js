@@ -17,6 +17,16 @@ driver
   .verifyConnectivity()
   .then(() => {
     logger.info("Connected to Neo4J");
+    const session = driver.session()
+    session.run("MERGE (c:Counter) ON CREATE SET c.post=$post return c", {
+      post: neo4j.int(0)
+    })
+      .then(result => {
+        if(result.summary.counters._stats.nodesCreated) {
+          logger.info("Created Counter");
+        }
+      })
+      .finally(() => session.close())
   })
   .catch((error) => {
     logger.error("Can't connect to Neo4J\n", error);
