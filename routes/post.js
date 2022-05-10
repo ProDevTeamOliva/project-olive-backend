@@ -178,8 +178,12 @@ router.post("/:id/like", (req, res, next) => {
       if (!record) {
         throw new PostError("apiPostLikeError");
       }
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
       res.status(201).json({
         message: "apiPostLikeSuccess",
+        id: post.id,
+        user,
       });
     })
     .catch((err) => next(err));
@@ -200,8 +204,12 @@ router.delete("/:id/like", (req, res, next) => {
       if (!record) {
         throw new PostError("apiPostUnlikeError");
       }
+      const post = record.get("p").properties;
+      const user = record.get("u").properties;
       res.status(200).json({
         message: "apiPostUnlikeSuccess",
+        id: post.id,
+        user,
       });
     })
     .catch((err) => next(err));
