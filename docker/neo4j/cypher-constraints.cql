@@ -1,3 +1,5 @@
 CREATE CONSTRAINT user_unique_login IF NOT EXISTS ON (n:User) ASSERT n.login IS UNIQUE;
 CREATE CONSTRAINT user_unique_sessionUserID IF NOT EXISTS ON (n:User) ASSERT n.sessionUserID IS UNIQUE;
 CREATE CONSTRAINT all_unique_id IF NOT EXISTS ON (n:ID) ASSERT n.id IS UNIQUE;
+
+CREATE CONSTRAINT post_unique_id IF NOT EXISTS ON (n:Post) ASSERT n.id IS UNIQUE;

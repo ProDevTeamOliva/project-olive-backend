@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const neo4j = require("neo4j-driver");
 const {
   saveBase64Picture,
   neo4jQueryWrapper,
@@ -9,12 +10,21 @@ const { PostError, NotFoundError } = require("../utils/errors");
 
 router.get("/", (req, res, next) => {
   const tag = req.query.tag ?? "";
+  const id = req.query.id ?? "";
+
+  const whereSetup = [];
+  if (id.length) {
+    whereSetup.push("p.id < toInteger($id)");
+  }
+  if (tag.length) {
+    whereSetup.push("$tag IN p.tags");
+  }
 
   neo4jQueryWrapper(
     `MATCH (p:Post)<-[:POSTED]-(u:User) ${
-      tag.length ? "WHERE $tag IN p.tags" : ""
-    } optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc`,
-    { tag }
+      whereSetup.length ? `WHERE ${whereSetup.join(" AND ")}` : ""
+    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
+    { tag, id }
   )
     .then(({ records }) => {
       const posts = records.map((record) => {
@@ -53,7 +63,7 @@ router.post("/", (req, res, next) => {
   );
 
   neo4jQueryWrapper(
-    "MATCH (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:randomUUID(), content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) return p, u",
+    "MATCH (c:Counter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post:ID{id:c.post, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.post=c.post+1 return p, u",
     {
       content,
       sessionUserID,
@@ -99,7 +109,7 @@ router.get("/tag", (req, res, next) => {
 });
 
 router.get("/:id", (req, res, next) => {
-  const id = req.params.id;
+  const id = neo4j.int(req.params.id);
 
   neo4jQueryWrapper(
     "MATCH (p:Post {id: $id})<-[:POSTED]-(u:User) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
@@ -131,7 +141,7 @@ router.get("/:id", (req, res, next) => {
 });
 
 router.delete("/:id", (req, res, next) => {
-  const id = req.params.id;
+  const id = neo4j.int(req.params.id);
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
@@ -155,7 +165,7 @@ router.delete("/:id", (req, res, next) => {
 
 router.post("/:id/like", (req, res, next) => {
   const idSource = req.user._id;
-  const idTarget = req.params.id;
+  const idTarget = neo4j.int(req.params.id);
 
   neo4jQueryWrapper(
     "MATCH (u:User{sessionUserID: $sessionUserID}) MATCH (p:Post{id: $id}) WHERE NOT exists((u)-[:LIKED]-(p)) MERGE (u)-[l:LIKED]->(p) RETURN u,l,p",
@@ -177,7 +187,7 @@ router.post("/:id/like", (req, res, next) => {
 
 router.delete("/:id/like", (req, res, next) => {
   const idSource = req.user._id;
-  const idTarget = req.params.id;
+  const idTarget = neo4j.int(req.params.id);
 
   neo4jQueryWrapper(
     "MATCH (u:User{sessionUserID: $sessionUserID})-[r:LIKED]->(p:Post{id: $id}) DELETE r RETURN u,p",
@@ -199,7 +209,7 @@ router.delete("/:id/like", (req, res, next) => {
 
 router.get("/:id/comment", (req, res, next) => {
   const idSource = req.user._id;
-  const idTarget = req.params.id;
+  const idTarget = neo4j.int(req.params.id);
 
   neo4jQueryWrapper(
     "MATCH (u:User)-[:COMMENTED]->(c:Comment)-[:UNDER]->(p:Post{id: $idPost}) RETURN u, c, p",
@@ -234,7 +244,7 @@ router.get("/:id/comment", (req, res, next) => {
 
 router.post("/:id/comment", (req, res, next) => {
   const idSource = req.user._id;
-  const idTarget = req.params.id;
+  const idTarget = neo4j.int(req.params.id);
   const comment = req.body.comment;
 
   neo4jQueryWrapper(
@@ -270,7 +280,7 @@ router.post("/:id/comment", (req, res, next) => {
 
 router.delete("/:id/comment", (req, res, next) => {
   const idSource = req.user._id;
-  const idTarget = req.params.id;
+  const idTarget = neo4j.int(req.params.id);
   const idComment = req.body.id;
 
   neo4jQueryWrapper(
