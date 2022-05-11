@@ -26,7 +26,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["in", "dose", "aid"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: ["PNowak", "ALewandowska", "JLewandowska"],
@@ -50,7 +50,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["year", "dive", "boat"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: ["AKowalski", "GNarbut"],
@@ -75,7 +75,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["can", "trip", "hay"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: ["AKowalski"],
@@ -100,7 +100,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["cat", "gift", "rib"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: [],
@@ -122,7 +122,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["coat", "pull", "pay"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: [],
@@ -144,7 +144,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["lend", "tool", "soar"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: ["PNowak", "OKowalczyk"],
@@ -166,7 +166,7 @@ const users = [
         content:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
         tags: ["lamp", "ball", "ask"],
-        type: "public",
+        type: "friends",
       },
     ],
     friends: [],
