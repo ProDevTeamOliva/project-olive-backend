@@ -13,7 +13,7 @@ router.get("/", (req, res, next) => {
   const id = req.query.id ?? "";
   const sessionUserID = req.user._id.toString();
 
-  const whereSetup = [];
+  const whereSetup = [""];
   if (id.length) {
     whereSetup.push("p.id < toInteger($id)");
   }
@@ -22,8 +22,8 @@ router.get("/", (req, res, next) => {
   }
 
   neo4jQueryWrapper(
-    `CALL { MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) RETURN p,u UNION MATCH (p:Post{type: $typePublic})<-[:POSTED]-(u:User) WHERE u.sessionUserID<>$sessionUserID RETURN p,u UNION MATCH (p:Post{type: $typeFriends})<-[:POSTED]-(u:User)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}) RETURN p,u } WITH p,u ${
-      whereSetup.length ? `WHERE ${whereSetup.join(" AND ")}` : ""
+    `MATCH (p:Post)<-[:POSTED]-(u:User) WHERE (u.sessionUserID=$sessionUserID OR p.type=$typePublic OR (p.type=$typeFriends AND (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}))) ${
+      whereSetup.length > 1 ? whereSetup.join(" AND ") : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )
@@ -64,7 +64,7 @@ router.post("/", (req, res, next) => {
   );
 
   neo4jQueryWrapper(
-    "MATCH (c:Counter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post{id:c.post, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.post=c.post+1 return p, u",
+    "MATCH (c:PostCounter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post{id:c.id, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.id=c.id+1 return p, u",
     {
       content,
       sessionUserID,
