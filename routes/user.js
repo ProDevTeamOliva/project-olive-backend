@@ -27,14 +27,18 @@ router.get("/:id", (req, res, next) => {
 router.get("/:id/post", (req, res, next) => {
   const id = req.params.id;
   const sessionUserID = req.user._id.toString();
+  const idPost = req.query.id ?? "";
 
   neo4jQueryWrapper(
-    "MATCH (u:User{id:$id}) CALL { WITH u MATCH (p:Post)<-[:POSTED]-(u) WHERE u.sessionUserID=$sessionUserID RETURN p UNION WITH u MATCH (p:Post{type:$typePublic})<-[:POSTED]-(u) WHERE u.sessionUserID<>$sessionUserID RETURN p UNION WITH u MATCH (p:Post{type: $typeFriends})<-[:POSTED]-(u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}) RETURN p } WITH p,u optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
+    `MATCH (u:User{id:$id}) OPTIONAL MATCH (p:Post)<-[:POSTED]-(u) WHERE (u.sessionUserID=$sessionUserID OR p.type=$typePublic OR (p.type=$typeFriends AND (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}))) ${
+      idPost.length ? "AND p.id < toInteger($idPost)" : ""
+    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN u, p, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     {
       id,
       typePublic: "public",
       typeFriends: "friends",
       sessionUserID,
+      idPost
     }
   )
     .then(({ records }) => {
