@@ -11,6 +11,7 @@ const { PostError, NotFoundError } = require("../utils/errors");
 router.get("/", (req, res, next) => {
   const tag = req.query.tag ?? "";
   const id = req.query.id ?? "";
+  const sessionUserID = req.user._id.toString();
 
   const whereSetup = [];
   if (id.length) {
@@ -21,10 +22,10 @@ router.get("/", (req, res, next) => {
   }
 
   neo4jQueryWrapper(
-    `MATCH (p:Post)<-[:POSTED]-(u:User) ${
+    `CALL { MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) RETURN p,u UNION MATCH (p:Post{type: $typePublic})<-[:POSTED]-(u:User) WHERE u.sessionUserID<>$sessionUserID RETURN p,u UNION MATCH (p:Post{type: $typeFriends})<-[:POSTED]-(u:User)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}) RETURN p,u } WITH p,u ${
       whereSetup.length ? `WHERE ${whereSetup.join(" AND ")}` : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
-    { tag, id }
+    { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )
     .then(({ records }) => {
       const posts = records.map((record) => {
