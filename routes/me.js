@@ -74,10 +74,13 @@ router.get("/friend", (req, res, next) => {
 
 router.get("/post", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
+  const id = req.query.id ?? "";
 
   neo4jQueryWrapper(
-    "MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l order by p.date desc",
-    { sessionUserID }
+    `MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) ${
+      id.length ? "WHERE p.id < toInteger($id)" : ""
+    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
+    { sessionUserID, id }
   )
     .then(({ records }) => {
       const posts = records.map((record) => {
