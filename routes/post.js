@@ -64,7 +64,7 @@ router.post("/", (req, res, next) => {
   );
 
   neo4jQueryWrapper(
-    "MATCH (c:Counter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post{id:c.post, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.post=c.post+1 return p, u",
+    "MATCH (c:PostCounter), (u:User{sessionUserID:$sessionUserID}) merge (u)-[:POSTED]->(p:Post{id:c.id, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures}) SET c.id=c.id+1 return p, u",
     {
       content,
       sessionUserID,

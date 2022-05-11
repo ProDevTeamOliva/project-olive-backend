@@ -19,12 +19,12 @@ driver
     logger.info("Connected to Neo4J");
     const session = driver.session();
     session
-      .run("MERGE (c:Counter) ON CREATE SET c.post=$post return c", {
-        post: neo4j.int(0),
+      .run("MERGE (p:Counter:PostCounter) ON CREATE SET p.id=$id MERGE (m:Counter:MessageCounter) ON CREATE SET m.id=$id return p,m", {
+        id: neo4j.int(0)
       })
       .then((result) => {
         if (result.summary.counters._stats.nodesCreated) {
-          logger.info("Created Counter");
+          logger.info("Created Counters");
         }
       })
       .finally(() => session.close());
