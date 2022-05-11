@@ -74,46 +74,6 @@ router.get("/:id/post", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.get("/:id/like", (req, res, next) => {
-  const id = req.params.id;
-
-  neo4jQueryWrapper(
-    "MATCH (u1:User{id:$id}) optional match (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(u1) optional match (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) as l",
-    { id }
-  )
-    .then(({ records }) => {
-      if (!records.length) {
-        throw new NotFoundError("apiUserNotFoundError");
-      }
-
-      const posts = records.reduce((result, record) => {
-        const postNode = record.get("p");
-        if (postNode) {
-          const post = postNode.properties;
-          const user = record.get("u").properties;
-          user.sessionUserID = undefined;
-          post.user = user;
-
-          post.likes = record.get("l").map((l) => {
-            const properties = l.properties;
-            properties.sessionUserID = undefined;
-            return properties;
-          });
-
-          result.push(post);
-        }
-
-        return result;
-      }, []);
-
-      res.status(200).json({
-        message: "apiUserLikedPostsSuccess",
-        posts,
-      });
-    })
-    .catch((err) => next(err));
-});
-
 router.post("/:id/friend", (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
