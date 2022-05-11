@@ -38,7 +38,7 @@ router.get("/:id/post", (req, res, next) => {
       typePublic: "public",
       typeFriends: "friends",
       sessionUserID,
-      idPost
+      idPost,
     }
   )
     .then(({ records }) => {

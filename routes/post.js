@@ -23,7 +23,7 @@ router.get("/", (req, res, next) => {
 
   neo4jQueryWrapper(
     `MATCH (p:Post)<-[:POSTED]-(u:User) WHERE (u.sessionUserID=$sessionUserID OR p.type=$typePublic OR (p.type=$typeFriends AND (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}))) ${
-      whereSetup.length>1 ? whereSetup.join(" AND ") : ""
+      whereSetup.length > 1 ? whereSetup.join(" AND ") : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )

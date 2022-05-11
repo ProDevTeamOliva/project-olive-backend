@@ -62,44 +62,10 @@ sio
       neo4jQueryWrapper(
         "MATCH (c:Conversation{id:$id})<-[:JOINED]-(u:User) RETURN c, u",
         { id }
-      ).then(({ records }) => {
-        const { id: conversationId } = records[0].get("c").properties;
-        const users = records.reduce((result, record) => {
-          const {
-            id: userId,
-            login: userLogin,
-            nameFirst: userNameFirst,
-            nameLast: userNameLast,
-            avatar: userAvatar,
-          } = record.get("u").properties;
-          return [
-            ...result,
-            {
-              id: userId,
-              login: userLogin,
-              nameFirst: userNameFirst,
-              nameLast: userNameLast,
-              avatar: userAvatar,
-            },
-          ];
-        }, []);
-        callback({ conversationId, users });
-      })
-      .catch(err => logger.error(err))
-    });
-
-    socket.on("history", (...args) => {
-      const idMessage = args[0]?.id
-      const callback = args.slice(-1)[0];
-      neo4jQueryWrapper(
-        `MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) ${
-          idMessage!==undefined ? "WHERE m.id < toInteger($idMessage)" : ""
-        } RETURN c, m, u ORDER BY m.date DESC LIMIT 15`,
-        { id, idMessage }
-      ).then(({ records }) => {
-        const { id: conversationId } = records[0].get("c").properties;
-        const messages = records.reduce((result, record) => {
-          if (record.get("m")) {
+      )
+        .then(({ records }) => {
+          const { id: conversationId } = records[0].get("c").properties;
+          const users = records.reduce((result, record) => {
             const {
               id: userId,
               login: userLogin,
@@ -107,29 +73,69 @@ sio
               nameLast: userNameLast,
               avatar: userAvatar,
             } = record.get("u").properties;
-            const { message, id: messageId, date } = record.get("m").properties;
-
-            const messageJson = {
-              user: {
+            return [
+              ...result,
+              {
                 id: userId,
                 login: userLogin,
                 nameFirst: userNameFirst,
                 nameLast: userNameLast,
                 avatar: userAvatar,
               },
-              message,
-              messageId,
-              date,
-              conversationId,
-            };
+            ];
+          }, []);
+          callback({ conversationId, users });
+        })
+        .catch((err) => logger.error(err));
+    });
 
-            result.push(messageJson);
-          }
-          return result;
-        }, []);
-        callback({ messages });
-      })
-      .catch(err => logger.error(err))
+    socket.on("history", (...args) => {
+      const idMessage = args[0]?.id;
+      const callback = args.slice(-1)[0];
+      neo4jQueryWrapper(
+        `MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) ${
+          idMessage !== undefined ? "WHERE m.id < toInteger($idMessage)" : ""
+        } RETURN c, m, u ORDER BY m.date DESC LIMIT 15`,
+        { id, idMessage }
+      )
+        .then(({ records }) => {
+          const { id: conversationId } = records[0].get("c").properties;
+          const messages = records.reduce((result, record) => {
+            if (record.get("m")) {
+              const {
+                id: userId,
+                login: userLogin,
+                nameFirst: userNameFirst,
+                nameLast: userNameLast,
+                avatar: userAvatar,
+              } = record.get("u").properties;
+              const {
+                message,
+                id: messageId,
+                date,
+              } = record.get("m").properties;
+
+              const messageJson = {
+                user: {
+                  id: userId,
+                  login: userLogin,
+                  nameFirst: userNameFirst,
+                  nameLast: userNameLast,
+                  avatar: userAvatar,
+                },
+                message,
+                messageId,
+                date,
+                conversationId,
+              };
+
+              result.push(messageJson);
+            }
+            return result;
+          }, []);
+          callback({ messages });
+        })
+        .catch((err) => logger.error(err));
     });
 
     socket.on("message", (...args) => {
