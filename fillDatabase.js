@@ -185,7 +185,7 @@ const fillDatabase = async () => {
   await neo4jQueryWrapper(
     "MATCH (n) WHERE NOT $label IN labels(n) DETACH DELETE n",
     {
-      label: "Counter",
+      label: "Util",
     }
   );
   console.log("Cleared Neo4J");
