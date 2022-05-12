@@ -84,9 +84,10 @@ router.get("/post", parseIdQuery, (req, res, next) => {
     `MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) ${
       id !== undefined ? "WHERE p.id < $id" : ""
     }
-    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p,u, collect(u2) AS u2l, count(c) as c
-    RETURN p, u, size(u2l) AS l, u IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p) WITH p, u, collect(pic) as pic
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH p, u, pic, count(c) as c
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, pic, c, collect(u2) AS u2l
+    RETURN p, u, size(u2l) AS l, u IN u2l AS lm, c, pic ORDER BY p.date DESC LIMIT 15`,
     { sessionUserID, id }
   )
     .then(({ records }) => {
@@ -99,6 +100,8 @@ router.get("/post", parseIdQuery, (req, res, next) => {
         post.likes = record.get("l");
         post.likesMe = record.get("lm");
         post.comments = record.get("c");
+
+        post.pictures = record.get("pic").map(pic => pic.properties.picture);
 
         return post;
       });
@@ -339,7 +342,7 @@ router.delete("/picture/:id", (req, res, next) => {
   if (!id) throw new NotFoundError("apiMyPictureDeleteError");
 
   neo4jQueryWrapper(
-    "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: $id}) WITH p, properties(p) AS pp DETACH DELETE p RETURN pp",
+    "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: $id}) WITH p, properties(p) AS pp WHERE NOT (p)-[:ATTACHED]->(:Post) DETACH DELETE p RETURN pp",
     { sessionUserID, id }
   )
     .then(({ records: [record] }) => {

@@ -9,6 +9,7 @@ const { PostError, NotFoundError } = require("../utils/errors");
 const { parseIdQuery, parseIdParam } = require("../utils/middlewares");
 const { picturesDir } = require("../utils/constants");
 const dirPrefix = `/${picturesDir}/`;
+const { validatePicturesSize } = require("../utils/validators");
 
 router.get("/", parseIdQuery, (req, res, next) => {
   const tag = req.query.tag ?? "";
@@ -86,6 +87,7 @@ router.post("/", (req, res, next) => {
     WITH p, u, collect(pic) as pic
     RETURN p, u, pic`,
     {
+      postId: uuidv4(),
       content,
       sessionUserID,
       tags,
