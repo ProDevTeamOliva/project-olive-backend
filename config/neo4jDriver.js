@@ -20,9 +20,9 @@ driver
     const session = driver.session();
     session
       .run(
-        "MERGE (p:Counter:PostCounter) ON CREATE SET p.id=$id MERGE (m:Counter:MessageCounter) ON CREATE SET m.id=$id return p,m",
+        "MERGE (p:Util:PostCounter) ON CREATE SET p.next=$next MERGE (m:Util:MessageCounter) ON CREATE SET m.next=$next return p,m",
         {
-          id: neo4j.int(0),
+          next: neo4j.int(0),
         }
       )
       .then((result) => {

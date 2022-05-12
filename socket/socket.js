@@ -146,7 +146,7 @@ sio
       const callback = args.slice(-1)[0];
 
       neo4jQueryWrapper(
-        "MATCH (mc:MessageCounter), (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CREATE (u)-[:SENT]->(m:Message:ID {id: mc.id, message: $message, date: datetime()})-[:SENT_TO]->(c) SET mc.id=mc.id+1 RETURN u, c, m",
+        "MATCH (mc:MessageCounter), (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CALL apoc.atomic.add(mc,'next',1) YIELD oldValue AS next CREATE (u)-[:SENT]->(m:Message:ID {id: next, message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
         {
           sessionUserID,
           conversationID,
