@@ -20,10 +20,11 @@ const validatePicturesSize = (next, picturesArray) => {
     if (!result) return false;
 
     const buffer = Buffer.from(
-      picture.picture.substring(picture.picture.indexOf(",") + 1)
+      picture.picture.substring(picture.picture.indexOf(",") + 1),
+      "base64"
     );
 
-    if (buffer.length <= 3 * 1024 * 1024) {
+    if (buffer.length / 1e+6 <= 3) {
       return true;
     }
 
