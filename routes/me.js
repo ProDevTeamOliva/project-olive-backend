@@ -172,6 +172,33 @@ router.get("/picture", (req, res, next) => {
     .catch((err) => next(err));
 });
 
+router.get("/all-pictures", (req, res, next) => {
+  const id = req.user._id;
+
+  neo4jQueryWrapper(
+    "MATCH (u: User {sessionUserID: $sessionUserID})-[]->(p:Picture) RETURN p",
+    {
+      sessionUserID: id.toString(),
+    }
+  )
+    .then(({ records }) => {
+      const pictures = records.map((record) => {
+        const pictureNode = record.get("p").properties;
+        return {
+          id: pictureNode.id,
+          picture: pictureNode.picture,
+          private: pictureNode.private,
+        };
+      });
+
+      res.status(200).json({
+        pictures,
+        message: "apiMyPicturesSuccess",
+      });
+    })
+    .catch((err) => next(err));
+});
+
 router.post("/picture", (req, res, next) => {
   const id = req.user._id;
   const { pictures } = req.body;

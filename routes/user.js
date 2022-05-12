@@ -194,6 +194,36 @@ router.get("/:id/picture", parseIdParam, (req, res, next) => {
     .catch((err) => next(err));
 });
 
+router.get("/:id/all-pictures", (req, res, next) => {
+  const id = req.params.id;
+
+  neo4jQueryWrapper(
+    "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[]->(p: Picture {private: $private}) RETURN p",
+    {
+      id,
+      private: false,
+    }
+  )
+    .then(({ records }) => {
+      if (!records.length) {
+        throw new NotFoundError("apiUserNotFoundError");
+      }
+
+      const pictures = records.reduce((result, record) => {
+        const pictureNode = record.get("p");
+        if (pictureNode) {
+          result.push(pictureNode.properties);
+        }
+        return result;
+      }, []);
+      res.status(200).json({
+        pictures,
+        message: "apiUserPicturesSuccess",
+      });
+    })
+    .catch((err) => next(err));
+});
+
 router.get("/", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
   const namePart = (req.query.namePart ?? "").toLowerCase();
