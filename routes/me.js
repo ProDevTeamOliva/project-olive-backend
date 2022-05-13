@@ -6,6 +6,7 @@ const {
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
 const { v4: uuidv4 } = require("uuid");
+const { parseIdQuery } = require("../utils/middlewares.js");
 
 router.get("/", (req, res, next) => {
   const id = req.user._id;
@@ -72,13 +73,13 @@ router.get("/friend", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.get("/post", (req, res, next) => {
+router.get("/post", parseIdQuery, (req, res, next) => {
   const sessionUserID = req.user._id.toString();
-  const id = req.query.id ?? "";
+  const {id} = req.query;
 
   neo4jQueryWrapper(
     `MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) ${
-      id.length ? "WHERE p.id < toInteger($id)" : ""
+      id!==undefined ? "WHERE p.id < $id" : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     { sessionUserID, id }
   )

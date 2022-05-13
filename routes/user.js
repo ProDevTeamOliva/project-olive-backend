@@ -1,8 +1,9 @@
 const router = require("express").Router();
 const { NotFoundError, FriendError } = require("../utils/errors");
+const { parseIdParam, parseIdQuery } = require("../utils/middlewares");
 const { neo4jQueryWrapper } = require("../utils/utils");
 
-router.get("/:id", (req, res, next) => {
+router.get("/:id", parseIdParam, (req, res, next) => {
   const id = req.params.id;
 
   neo4jQueryWrapper("MATCH (u:User {id: $id}) RETURN u", {
@@ -24,14 +25,14 @@ router.get("/:id", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.get("/:id/post", (req, res, next) => {
-  const id = req.params.id;
+router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
+  const {id} = req.params;
   const sessionUserID = req.user._id.toString();
-  const idPost = req.query.id ?? "";
+  const {id: idPost} = req.query;
 
   neo4jQueryWrapper(
-    `MATCH (u:User{id:$id}) OPTIONAL MATCH (p:Post)<-[:POSTED]-(u) WHERE (u.sessionUserID=$sessionUserID OR p.type=$typePublic OR (p.type=$typeFriends AND (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}))) ${
-      idPost.length ? "AND p.id < toInteger($idPost)" : ""
+    `MATCH (u:User{id:$id}) OPTIONAL MATCH (p:Post)<-[:POSTED]-(u) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u.sessionUserID=$sessionUserID OR (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID})))) ${
+      idPost!==undefined ? "AND p.id < $idPost" : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN u, p, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     {
       id,
@@ -74,7 +75,7 @@ router.get("/:id/post", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.post("/:id/friend", (req, res, next) => {
+router.post("/:id/friend", parseIdParam, (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
@@ -96,7 +97,7 @@ router.post("/:id/friend", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.post("/:id/accept", (req, res, next) => {
+router.post("/:id/accept", parseIdParam, (req, res, next) => {
   const idSource = req.user._id;
   const idTargetUser = req.params.id;
 
@@ -119,7 +120,7 @@ router.post("/:id/accept", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.delete("/:id/friend", (req, res, next) => {
+router.delete("/:id/friend", parseIdParam, (req, res, next) => {
   const idSource = req.user._id;
   const idTarget = req.params.id;
 
@@ -141,7 +142,7 @@ router.delete("/:id/friend", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.get("/:id/picture", (req, res, next) => {
+router.get("/:id/picture", parseIdParam, (req, res, next) => {
   const id = req.params.id;
 
   neo4jQueryWrapper(

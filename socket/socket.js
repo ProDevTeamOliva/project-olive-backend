@@ -1,12 +1,18 @@
 const sio = require("../config/socket");
 const logger = require("../config/logger");
+const neo4j = require("neo4j-driver")
 
 const AuthenticationError = require("passport/lib/errors/authenticationerror");
-const { authenticationCheck, wrapMiddleware } = require("../utils/middlewares");
+const { authenticationCheck, wrapMiddleware, parseIdQuery } = require("../utils/middlewares");
 const { neo4jQueryWrapper } = require("../utils/utils");
 const { NotFoundError } = require("../utils/errors");
 
 const authenticationCheckWrapped = wrapMiddleware(authenticationCheck);
+
+const parseIdQueryWrapped = payload => {
+  payload.id = `${payload.id}`
+  return parseIdQuery({query: payload}, null, () => {})
+}
 
 const getId = (socket) => socket.nsp.name.split("/").slice(-1)[0];
 
@@ -16,9 +22,12 @@ sio
 
 const uuidRegex =
   "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+const idRegex = "\\d+"
+
+const wrapNamespaceRegex = namespace => new RegExp(`^${namespace}$`)
 
 sio
-  .of(new RegExp(`^/user/${uuidRegex}$`))
+  .of(wrapNamespaceRegex(`/user/${idRegex}`))
   .use(authenticationCheckWrapped)
   .use((socket, next) => {
     const sessionUserID = socket.request.user._id.toString();
@@ -37,7 +46,7 @@ sio
   });
 
 sio
-  .of(new RegExp(`^/chat/${uuidRegex}$`))
+  .of(wrapNamespaceRegex(`/chat/${uuidRegex}`))
   .use(authenticationCheckWrapped)
   .use((socket, next) => {
     const sessionUserID = socket.request.user._id.toString();
@@ -90,11 +99,14 @@ sio
     });
 
     socket.on("history", (...args) => {
-      const idMessage = args[0]?.id;
+      const payload = args[0] ?? {}
+      parseIdQueryWrapped(payload)
+      const {id: idMessage} = payload;
       const callback = args.slice(-1)[0];
+      
       neo4jQueryWrapper(
         `MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) ${
-          idMessage !== undefined ? "WHERE m.id < toInteger($idMessage)" : ""
+          idMessage!==undefined ? "WHERE m.id < $idMessage" : ""
         } RETURN c, m, u ORDER BY m.date DESC LIMIT 15`,
         { id, idMessage }
       )
