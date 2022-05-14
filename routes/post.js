@@ -221,7 +221,7 @@ router.get("/:id/comment", (req, res, next) => {
   const idTarget = neo4j.int(req.params.id);
 
   neo4jQueryWrapper(
-    "MATCH (u:User)-[:COMMENTED]->(c:Comment)-[:UNDER]->(p:Post{id: $idPost}) RETURN u, c, p",
+    "MATCH (u:User)-[:COMMENTED]->(c:Comment)-[:UNDER]->(p:Post{id: $idPost}) RETURN u, c, p ORDER BY c.date ASC",
     {
       idPost: idTarget,
     }
@@ -278,7 +278,7 @@ router.post("/:id/comment", (req, res, next) => {
         comment: {
           comment: comment.comment,
           date: comment.date,
-          commentId: comment.id,
+          id: comment.id,
           authorLogin: user.login,
           postId: post.id,
         },
