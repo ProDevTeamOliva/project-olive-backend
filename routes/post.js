@@ -279,7 +279,7 @@ router.post("/:id/comment", (req, res, next) => {
           comment: comment.comment,
           date: comment.date,
           id: comment.id,
-          authorLogin: user.login,
+          user: user,
           postId: post.id,
         },
       });
