@@ -240,7 +240,7 @@ router.delete("/comment/:id", parseIdParam, (req, res, next) => {
   const idComment = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u:User{sessionUserID: $sessionUserID})-[r1:COMMENTED]->(c:Comment {id: $idComment}) DETACH DELETE c RETURN u, c, p",
+    "MATCH (u:User{sessionUserID: $sessionUserID})-[r1:COMMENTED]->(c:Comment {id: $idComment}) DETACH DELETE c RETURN u, c",
     {
       sessionUserID: idSource.toString(),
       idComment,
