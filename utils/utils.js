@@ -65,9 +65,17 @@ const validateFields = (next, fields) => {
   }
 };
 
+const getCallback = args => {
+  const callback = args.slice(-1)[0]
+  if(callback instanceof Function) {
+    return callback
+  }
+}
+
 module.exports = {
   saveBase64Picture,
   neo4jQueryWrapper,
   validateFields,
   disconnectSessionSockets,
+  getCallback
 };

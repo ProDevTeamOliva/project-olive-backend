@@ -1,5 +1,4 @@
 const router = require("express").Router();
-const neo4j = require("neo4j-driver");
 const {
   saveBase64Picture,
   neo4jQueryWrapper,
