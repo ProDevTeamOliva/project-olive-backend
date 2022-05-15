@@ -20,7 +20,14 @@ driver
     const session = driver.session();
     session
       .run(
-        "MERGE (p:Util:PostCounter) ON CREATE SET p.next=$next MERGE (m:Util:MessageCounter) ON CREATE SET m.next=$next return p,m",
+        `MERGE (p:Util:PostCounter) ON CREATE SET p.next=$next
+        MERGE (m:Util:MessageCounter) ON CREATE SET m.next=$next
+        MERGE (u:Util:UserCounter) ON CREATE SET u.next=$next
+        MERGE (c:Util:ConversationCounter) ON CREATE SET c.next=$next
+        MERGE (cc:Util:CommentCounter) ON CREATE SET cc.next=$next
+        MERGE (a:Util:AvatarCounter) ON CREATE SET a.next=$next
+        MERGE (pc:Util:PictureCounter) ON CREATE SET pc.next=$next
+        RETURN p,m,u,c,cc,a,pc`,
         {
           next: neo4j.int(0),
         }

@@ -24,7 +24,7 @@ router.post("/register", (req, res, next) => {
     const sessionUserID = user._id.toString();
 
     neo4jQueryWrapper(
-      "CREATE (u:User:ID {id: randomUUID(), nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
+      "MATCH (uc:UserCounter) CALL apoc.atomic.add(uc,'next',1) YIELD oldValue AS next CREATE (u:User {id: next, nameFirst: $nameFirst, nameLast: $nameLast, login: $login, sessionUserID: $sessionUserID, avatar: $avatar, registrationDate:datetime()}) RETURN u",
       {
         nameFirst,
         nameLast,
