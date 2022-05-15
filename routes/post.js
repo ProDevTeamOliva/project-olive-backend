@@ -10,11 +10,11 @@ const { parseIdQuery, parseIdParam } = require("../utils/middlewares");
 
 router.get("/", parseIdQuery, (req, res, next) => {
   const tag = req.query.tag ?? "";
-  const {id} = req.query;
+  const { id } = req.query;
   const sessionUserID = req.user._id.toString();
 
   const whereSetup = [""];
-  if (id!==undefined) {
+  if (id !== undefined) {
     whereSetup.push("p.id < $id");
   }
   if (tag.length) {

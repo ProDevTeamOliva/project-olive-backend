@@ -74,11 +74,11 @@ router.get("/friend", (req, res, next) => {
 
 router.get("/post", parseIdQuery, (req, res, next) => {
   const sessionUserID = req.user._id.toString();
-  const {id} = req.query;
+  const { id } = req.query;
 
   neo4jQueryWrapper(
     `MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) ${
-      id!==undefined ? "WHERE p.id < $id" : ""
+      id !== undefined ? "WHERE p.id < $id" : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     { sessionUserID, id }
   )
@@ -179,7 +179,7 @@ router.post("/picture", (req, res, next) => {
   const picturesParsed = pictures.map((element) => ({
     private: element.private,
     base64: element.picture,
-    dirSuffix: `-${element.filename}`
+    dirSuffix: `-${element.filename}`,
   }));
 
   neo4jQueryWrapper(
@@ -187,15 +187,15 @@ router.post("/picture", (req, res, next) => {
     {
       sessionUserID: id.toString(),
       pictures: picturesParsed,
-      dirPrefix: "/public/pictures/"
+      dirPrefix: "/public/pictures/",
     }
   )
     .then(({ records }) => {
       const pictures = records.map((record, index) => {
         const pictureNode = record.get("p").properties;
-        saveBase64Picture(pictureNode.picture, picturesParsed[index].base64)
-        return pictureNode
-      })
+        saveBase64Picture(pictureNode.picture, picturesParsed[index].base64);
+        return pictureNode;
+      });
 
       res.status(200).json({
         pictures,
@@ -218,7 +218,7 @@ router.patch("/avatar", (req, res, next) => {
     {
       sessionUserID: userId.toString(),
       dirPrefix: "/public/pictures/",
-      dirSuffix: `-${filename}`
+      dirSuffix: `-${filename}`,
     }
   )
     .then(({ records: [record] }) => {

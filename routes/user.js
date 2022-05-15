@@ -26,13 +26,13 @@ router.get("/:id", parseIdParam, (req, res, next) => {
 });
 
 router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
-  const {id} = req.params;
+  const { id } = req.params;
   const sessionUserID = req.user._id.toString();
-  const {id: idPost} = req.query;
+  const { id: idPost } = req.query;
 
   neo4jQueryWrapper(
     `MATCH (u:User{id:$id}) OPTIONAL MATCH (p:Post)<-[:POSTED]-(u) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u.sessionUserID=$sessionUserID OR (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID})))) ${
-      idPost!==undefined ? "AND p.id < $idPost" : ""
+      idPost !== undefined ? "AND p.id < $idPost" : ""
     } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN u, p, collect(u2) AS l ORDER BY p.date DESC LIMIT 15`,
     {
       id,

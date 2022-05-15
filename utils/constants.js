@@ -1,5 +1,5 @@
-const idRegexString = "(([1-9]\\d*)|0)"
+const idRegexString = "(([1-9]\\d*)|0)";
 
 module.exports = {
-    idRegexString
-}
+  idRegexString,
+};
