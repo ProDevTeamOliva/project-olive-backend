@@ -5,7 +5,6 @@ const {
   validateFields,
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
-const { v4: uuidv4 } = require("uuid");
 const { parseIdQuery } = require("../utils/middlewares.js");
 
 router.get("/", (req, res, next) => {
@@ -177,39 +176,29 @@ router.post("/picture", (req, res, next) => {
     return;
   }
 
-  const picturesParsed = pictures.map((element) => {
-    const id = uuidv4();
-
-    return {
-      id,
-      picture: `/public/pictures/${id}-${element.filename}`,
-      private: element.private,
-      base64: element.picture,
-    };
-  });
+  const picturesParsed = pictures.map((element) => ({
+    private: element.private,
+    base64: element.picture,
+    dirSuffix: `-${element.filename}`
+  }));
 
   neo4jQueryWrapper(
-    "UNWIND $pictures as picture MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(p:Picture:ID {id: picture.id, picture: picture.picture, private: picture.private}) RETURN p",
+    "UNWIND $pictures as picture WITH picture, $dirPrefix + randomUUID() + picture.dirSuffix AS dir MATCH (pc:PictureCounter), (u:User {sessionUserID: $sessionUserID}) CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next MERGE (u)-[r:UPLOADED]->(p:Picture {id: next, picture: dir, private: picture.private}) RETURN p",
     {
       sessionUserID: id.toString(),
       pictures: picturesParsed,
+      dirPrefix: "/public/pictures/"
     }
   )
     .then(({ records }) => {
-      records.forEach((record) => {
+      const pictures = records.map((record, index) => {
         const pictureNode = record.get("p").properties;
-        const picture = picturesParsed.filter(
-          (pic) => pic.id === pictureNode.id
-        )[0];
-        saveBase64Picture(picture.picture, picture.base64);
-      });
+        saveBase64Picture(pictureNode.picture, picturesParsed[index].base64)
+        return pictureNode
+      })
 
       res.status(200).json({
-        pictures: picturesParsed.map((picture) => ({
-          id: picture.id,
-          picture: picture.picture,
-          private: picture.private,
-        })),
+        pictures,
         message: "apiMyPicturesSuccess",
       });
     })
@@ -224,26 +213,20 @@ router.patch("/avatar", (req, res, next) => {
     return;
   }
 
-  const picId = uuidv4();
-
-  const avatarParsed = {
-    id: picId,
-    picture: `/public/pictures/${picId}-${filename}`,
-    base64: avatar,
-  };
-
   neo4jQueryWrapper(
-    "MATCH (u:User {sessionUserID: $sessionUserID}) MERGE (u)-[r:UPLOADED]->(a:Avatar:ID {id: $avatar.id, avatar: $avatar.picture}) SET u.avatar = $avatar.picture RETURN u",
+    "WITH $dirPrefix + randomUUID() + $dirSuffix AS avatar MATCH (ac:AvatarCounter), (u:User {sessionUserID: $sessionUserID}) CALL apoc.atomic.add(ac,'next',1) YIELD oldValue AS next MERGE (u)-[r:UPLOADED]->(a:Avatar {id: next, avatar: avatar}) SET u.avatar = avatar RETURN u,a",
     {
       sessionUserID: userId.toString(),
-      avatar: avatarParsed,
+      dirPrefix: "/public/pictures/",
+      dirSuffix: `-${filename}`
     }
   )
     .then(({ records: [record] }) => {
+      const avatarNode = record.get("a").properties;
       const user = record.get("u").properties;
       user.sessionUserID = undefined;
 
-      saveBase64Picture(avatarParsed.picture, avatarParsed.base64);
+      saveBase64Picture(avatarNode.avatar, avatar);
 
       res.status(200).json({
         user,

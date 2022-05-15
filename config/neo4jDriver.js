@@ -24,8 +24,10 @@ driver
         MERGE (m:Util:MessageCounter) ON CREATE SET m.next=$next
         MERGE (u:Util:UserCounter) ON CREATE SET u.next=$next
         MERGE (c:Util:ConversationCounter) ON CREATE SET c.next=$next
-        MERGE (pc:Util:CommentCounter) ON CREATE SET pc.next=$next
-        RETURN p,m,u,c,pc`,
+        MERGE (cc:Util:CommentCounter) ON CREATE SET cc.next=$next
+        MERGE (a:Util:AvatarCounter) ON CREATE SET a.next=$next
+        MERGE (pc:Util:PictureCounter) ON CREATE SET pc.next=$next
+        RETURN p,m,u,c,cc,a,pc`,
         {
           next: neo4j.int(0),
         }

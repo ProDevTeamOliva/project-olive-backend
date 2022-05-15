@@ -180,7 +180,7 @@ sio
       const message = args[0].message;
 
       neo4jQueryWrapper(
-        "MATCH (mc:MessageCounter), (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CALL apoc.atomic.add(mc,'next',1) YIELD oldValue AS next CREATE (u)-[:SENT]->(m:Message:ID {id: next, message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
+        "MATCH (mc:MessageCounter), (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CALL apoc.atomic.add(mc,'next',1) YIELD oldValue AS next CREATE (u)-[:SENT]->(m:Message {id: next, message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",
         {
           sessionUserID,
           conversationID,
