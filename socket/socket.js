@@ -5,6 +5,7 @@ const AuthenticationError = require("passport/lib/errors/authenticationerror");
 const { authenticationCheck, wrapMiddleware, parseIdQuery, parseIdParam } = require("../utils/middlewares");
 const { neo4jQueryWrapper, getCallback } = require("../utils/utils");
 const { NotFoundError } = require("../utils/errors");
+const { idRegexString } = require("../utils/constants");
 
 const authenticationCheckWrapped = wrapMiddleware(authenticationCheck);
 
@@ -20,12 +21,10 @@ sio
   .of("/")
   .use((socket, next) => next(new AuthenticationError("apiUnauthorizedError")));
 
-const idRegex = "([1-9]\\d*)|0"
-
 const wrapNamespaceRegex = namespace => new RegExp(`^${namespace}$`)
 
 sio
-  .of(wrapNamespaceRegex(`/user/${idRegex}`))
+  .of(wrapNamespaceRegex(`/user/${idRegexString}`))
   .use(authenticationCheckWrapped)
   .use(parseIdParamWrapped)
   .use((socket, next) => {
@@ -36,7 +35,7 @@ sio
     })
       .then(({ records: [record] }) => {
         const id = record.get("u").properties.id;
-        if (id !== idNamespace) {
+        if (id !== idNamespace.toNumber()) {
           throw new AuthenticationError("apiUnauthorizedError");
         }
         next();
@@ -45,7 +44,7 @@ sio
   });
 
 sio
-  .of(wrapNamespaceRegex(`/chat/${idRegex}`))
+  .of(wrapNamespaceRegex(`/chat/${idRegexString}`))
   .use(authenticationCheckWrapped)
   .use(parseIdParamWrapped)
   .use((socket, next) => {
@@ -109,8 +108,9 @@ sio
         return
       }
 
+      const payloadId = args[0].id
       const socketDummy = {request: {query: {
-        id: `${args[0].id}`
+        id: payloadId!==undefined ? `${payloadId}` : undefined
       }}}
       const nextDummy = error => {
         socketDummy.error = error
@@ -177,7 +177,7 @@ sio
       const sessionUserID = socket.request.user._id.toString();
       const conversationID = id;
 
-      const { message } = args[0];
+      const message = args[0].message;
 
       neo4jQueryWrapper(
         "MATCH (mc:MessageCounter), (u:User {sessionUserID: $sessionUserID})-[:JOINED]->(c:Conversation {id: $conversationID}) CALL apoc.atomic.add(mc,'next',1) YIELD oldValue AS next CREATE (u)-[:SENT]->(m:Message:ID {id: next, message: $message, date: datetime()})-[:SENT_TO]->(c) RETURN u, c, m",

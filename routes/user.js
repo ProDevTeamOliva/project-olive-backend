@@ -102,7 +102,7 @@ router.post("/:id/accept", parseIdParam, (req, res, next) => {
   const idTargetUser = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (cc:ConversationCounter), (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) CALL apoc.atomic.add(cc,'next',1) YIELD oldValue AS next DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation:ID {id: next, active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
+    "MATCH (cc:ConversationCounter), (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) CALL apoc.atomic.add(cc,'next',1) YIELD oldValue AS next DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation {id: next, active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
     {
       sessionUserID: idSource.toString(),
       idTargetUser,
