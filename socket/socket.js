@@ -47,7 +47,7 @@ sio
       })
       .catch((err) => next(err));
   })
-  .on('connection', (socket) => {
+  .on("connection", (socket) => {
     socket.emit("connected", `Connected to private socket ${socket.nsp.name}`);
   });
 
