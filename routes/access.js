@@ -8,6 +8,7 @@ const {
   validateFields,
   disconnectSessionSockets,
 } = require("../utils/utils");
+const { picturesDir, avatarDefault } = require("../utils/constants");
 
 router.post("/register", (req, res, next) => {
   const { nameFirst, nameLast, login, password } = req.body;
@@ -30,7 +31,7 @@ router.post("/register", (req, res, next) => {
         nameLast,
         login,
         sessionUserID,
-        avatar: "/public/pictures/avatar_default.png",
+        avatar: `/${picturesDir}/${avatarDefault}`,
       }
     )
       .then(() =>
