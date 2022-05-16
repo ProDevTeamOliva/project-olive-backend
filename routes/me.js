@@ -6,6 +6,10 @@ const {
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
 const { parseIdQuery } = require("../utils/middlewares.js");
+const {picturesDir, avatarDefault} = require("../utils/constants")
+const dirPrefix = `/${picturesDir}/`
+const fs = require("fs/promises");
+const { NotFoundError } = require("../utils/errors.js");
 
 router.get("/", (req, res, next) => {
   const id = req.user._id;
@@ -187,7 +191,7 @@ router.post("/picture", (req, res, next) => {
     {
       sessionUserID: id.toString(),
       pictures: picturesParsed,
-      dirPrefix: "/public/pictures/",
+      dirPrefix,
     }
   )
     .then(({ records }) => {
@@ -217,7 +221,7 @@ router.patch("/avatar", (req, res, next) => {
     "WITH $dirPrefix + randomUUID() + $dirSuffix AS avatar MATCH (ac:AvatarCounter), (u:User {sessionUserID: $sessionUserID}) CALL apoc.atomic.add(ac,'next',1) YIELD oldValue AS next MERGE (u)-[r:UPLOADED]->(a:Avatar {id: next, avatar: avatar}) SET u.avatar = avatar RETURN u,a",
     {
       sessionUserID: userId.toString(),
-      dirPrefix: "/public/pictures/",
+      dirPrefix,
       dirSuffix: `-${filename}`,
     }
   )
@@ -253,5 +257,31 @@ router.get("/avatar", (req, res, next) => {
     })
     .catch((err) => next(err));
 });
+
+router.delete("/avatar", (req, res, next) => {
+  const sessionUserID = req.user._id.toString()
+
+  neo4jQueryWrapper("MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar) WITH u, a, properties(a) AS aa DETACH DELETE a SET u.avatar=$default RETURN aa", {
+    sessionUserID,
+    default: `/${picturesDir}/${avatarDefault}`
+  })
+    .then(({ records: [record]}) => {
+      if(!record) {
+        throw new NotFoundError("apiMyAvatarDeleteError")
+      }
+
+      const {avatar} = record.get("aa")
+      
+      return fs.rm(avatar.slice(1))
+        .then(() => {
+          res.status(200).json({
+            avatar: avatar,
+            message: "apiMyAvatarDeleteSuccess",
+          });
+        })
+
+    })
+    .catch((err) => next(err));
+})
 
 module.exports = router;

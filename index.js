@@ -11,10 +11,9 @@ const session = require("./config/session");
 const originHost = require("./config/originHost");
 const sio = require("./socket/socket");
 const logger = require("./config/logger");
+const {picturesDir} = require("./utils/constants")
 
 const app = require("./config/express");
-
-const picturesDir = "public/pictures";
 
 if (!fs.existsSync(picturesDir)) {
   fs.mkdirSync(picturesDir, { recursive: true });

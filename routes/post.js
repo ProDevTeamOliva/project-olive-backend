@@ -7,6 +7,7 @@ const {
 const { v4: uuidv4 } = require("uuid");
 const { PostError, NotFoundError } = require("../utils/errors");
 const { parseIdQuery, parseIdParam } = require("../utils/middlewares");
+const { picturesDir } = require("../utils/constants");
 
 router.get("/", parseIdQuery, (req, res, next) => {
   const tag = req.query.tag ?? "";
@@ -60,7 +61,7 @@ router.post("/", (req, res, next) => {
   }
 
   const picturesParsed = (pictures ?? []).map(
-    (element) => `/public/pictures/${uuidv4()}-${element.filename}`
+    (element) => `/${picturesDir}/${uuidv4()}-${element.filename}`
   );
 
   neo4jQueryWrapper(
