@@ -6,8 +6,8 @@ const {
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
 const { parseIdQuery } = require("../utils/middlewares.js");
-const {picturesDir, avatarDefault} = require("../utils/constants")
-const dirPrefix = `/${picturesDir}/`
+const { picturesDir, avatarDefault } = require("../utils/constants");
+const dirPrefix = `/${picturesDir}/`;
 const fs = require("fs/promises");
 const { NotFoundError } = require("../utils/errors.js");
 
@@ -259,29 +259,30 @@ router.get("/avatar", (req, res, next) => {
 });
 
 router.delete("/avatar", (req, res, next) => {
-  const sessionUserID = req.user._id.toString()
+  const sessionUserID = req.user._id.toString();
 
-  neo4jQueryWrapper("MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar) WITH u, a, properties(a) AS aa DETACH DELETE a SET u.avatar=$default RETURN aa", {
-    sessionUserID,
-    default: `/${picturesDir}/${avatarDefault}`
-  })
-    .then(({ records: [record]}) => {
-      if(!record) {
-        throw new NotFoundError("apiMyAvatarDeleteError")
+  neo4jQueryWrapper(
+    "MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar) WITH u, a, properties(a) AS aa DETACH DELETE a SET u.avatar=$default RETURN aa",
+    {
+      sessionUserID,
+      default: `/${picturesDir}/${avatarDefault}`,
+    }
+  )
+    .then(({ records: [record] }) => {
+      if (!record) {
+        throw new NotFoundError("apiMyAvatarDeleteError");
       }
 
-      const {avatar} = record.get("aa")
-      
-      return fs.rm(avatar.slice(1))
-        .then(() => {
-          res.status(200).json({
-            avatar: avatar,
-            message: "apiMyAvatarDeleteSuccess",
-          });
-        })
+      const { avatar } = record.get("aa");
 
+      return fs.rm(avatar.slice(1)).then(() => {
+        res.status(200).json({
+          avatar: avatar,
+          message: "apiMyAvatarDeleteSuccess",
+        });
+      });
     })
     .catch((err) => next(err));
-})
+});
 
 module.exports = router;

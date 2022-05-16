@@ -11,7 +11,7 @@ const session = require("./config/session");
 const originHost = require("./config/originHost");
 const sio = require("./socket/socket");
 const logger = require("./config/logger");
-const {picturesDir} = require("./utils/constants")
+const { picturesDir } = require("./utils/constants");
 
 const app = require("./config/express");
 
