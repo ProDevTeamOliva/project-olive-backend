@@ -2,6 +2,7 @@ const router = require("express").Router();
 const { NotFoundError, FriendError } = require("../utils/errors");
 const { parseIdParam, parseIdQuery } = require("../utils/middlewares");
 const { neo4jQueryWrapper } = require("../utils/utils");
+const sio = require("../config/socket");
 
 router.get("/:id", parseIdParam, (req, res, next) => {
   const id = req.params.id;
@@ -90,6 +91,9 @@ router.post("/:id/friend", parseIdParam, (req, res, next) => {
       if (!record) {
         throw new FriendError("apiFriendPendingError");
       }
+
+      sio.of(`/user/${idTarget}`).emit("newFriendRequest", "");
+
       res.status(201).json({
         message: "apiFriendPendingSuccess",
       });
@@ -113,6 +117,9 @@ router.post("/:id/accept", parseIdParam, (req, res, next) => {
       if (!record) {
         throw new FriendError("apiFriendAcceptError");
       }
+
+      sio.of(`/user/${idTarget}`).emit("friendRequestAccepted", `${idSource}`);
+
       res.status(201).json({
         message: "apiFriendAcceptSuccess",
       });
