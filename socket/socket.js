@@ -181,9 +181,9 @@ sio
       })
       .on("message", (...args) => {
         const callback = getCallback(args);
-        // if(!callback) {
-        //   return
-        // }
+        if(!callback) {
+          return
+        }
 
         const sessionUserID = socket.request.user._id.toString();
         const conversationID = id;
@@ -223,12 +223,56 @@ sio
               conversationId,
             };
 
-            socket.emit("message", messageJson); // remove
             socket.broadcast.emit("message", messageJson);
-            // callback(messageJson)
+            callback(messageJson)
           })
           .catch((err) => logger.error(err));
-      });
+      
+      })
+      .on("messageRemove", (...args) => {
+        const callback = getCallback(args);
+        if(!callback) {
+          return
+        }
+
+        const sessionUserID = socket.request.user._id.toString();
+
+        const payloadId = args[0].id;
+        const socketDummy = {
+          request: {},
+          nsp: {
+            name: payloadId
+          }
+        };
+        const nextDummy = (error) => {
+          socketDummy.error = error;
+        };
+        parseIdParamWrapped(socketDummy, nextDummy);
+        if (socketDummy.error) {
+          return;
+        }
+
+        const { id: idMessage } = socketDummy.request.params;
+
+        neo4jQueryWrapper("MATCH (u:User {sessionUserID: $sessionUserID})-[:SENT]->(m:Message {id: $idMessage})-[:SENT_TO]->(c:Conversation {id: $id}) WITH m, properties(m) AS mm DETACH DELETE m RETURN mm", {
+          sessionUserID,
+          idMessage,
+          id
+        })
+        .then(({records: [record]}) => {
+          if (!record) {
+            throw new NotFoundError("apiMessageNotFoundError");
+          }
+          const message = record.get("mm")
+
+          const payload = {id: message.id}
+          socket.broadcast.emit("messageRemove", payload);
+          callback(payload)
+
+        })
+        .catch((err) => logger.error(err));
+  
+      })
   });
 
 logger.info("WebSocket initialized!");
