@@ -285,4 +285,27 @@ router.delete("/avatar", (req, res, next) => {
     .catch((err) => next(err));
 });
 
+router.get("/unread-chats", (req, res, next) => {
+  const sessionUserID = req.user._id.toString();
+
+  neo4jQueryWrapper(
+    "MATCH (u:User {sessionUserID: $sessionUserID})-[:UNREAD]->(c:Conversation), (u)-[:JOINED]->(c), (u2:User)-[:JOINED]->(c) RETURN u2",
+    { sessionUserID }
+  )
+    .then(({ records }) => {
+      const chats = records.map((record) => {
+        let user = record.get("u2").properties;
+        user.sessionUserID = undefined;
+
+        return user;
+      });
+
+      return res.status(200).json({
+        message: "apiChatsFetchSuccess",
+        chats,
+      });
+    })
+    .catch((err) => next(err));
+});
+
 module.exports = router;
