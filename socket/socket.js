@@ -178,6 +178,12 @@ sio
             callback({ messages });
           })
           .catch((err) => logger.error(err));
+
+        const sessionUserID = socket.request.user._id.toString();
+        neo4jQueryWrapper(
+          "MATCH (c:Conversation{id:$id})<-[r:UNREAD]-(u:User {sessionUserID:$sessionUserID}) DELETE r RETURN c, u",
+          { sessionUserID, id }
+        ).catch((err) => logger.error(err));
       })
       .on("message", (...args) => {
         const callback = getCallback(args);
@@ -222,6 +228,20 @@ sio
               date,
               conversationId,
             };
+
+            const clientsCount = sio.of(socket.nsp.name).sockets.size;
+            if (clientsCount == 1) {
+              neo4jQueryWrapper(
+                "MATCH (u:User{sessionUserID:$sessionUserID})-[:JOINED]->(c:Conversation{id:$id})<-[:JOINED]-(u2:User) MERGE (u2)-[:UNREAD]->(c) RETURN u2",
+                { sessionUserID, id }
+              )
+                .then(({records : [record]}) => {
+                  const friendId = record.get("u2").properties.id;
+
+                  sio.of(`/user/${friendId}`).emit("newMessage", `{"friendId": ${friendId}, "chatId": ${id}}`);
+                })
+                .catch((err) => next(err));
+            }
 
             socket.broadcast.emit("message", messageJson);
             callback(messageJson);

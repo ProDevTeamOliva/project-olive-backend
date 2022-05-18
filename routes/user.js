@@ -118,7 +118,7 @@ router.post("/:id/accept", parseIdParam, (req, res, next) => {
         throw new FriendError("apiFriendAcceptError");
       }
 
-      sio.of(`/user/${idTarget}`).emit("friendRequestAccepted", `${idSource}`);
+      sio.of(`/user/${idTargetUser}`).emit("friendRequestAccepted", `{"id": ${idSource}}`);
 
       res.status(201).json({
         message: "apiFriendAcceptSuccess",
