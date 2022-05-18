@@ -262,7 +262,7 @@ router.delete("/avatar", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
-    "MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar) WITH u, a, properties(a) AS aa DETACH DELETE a SET u.avatar=$default RETURN aa",
+    "MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar) DETACH DELETE a SET u.avatar=$default RETURN u",
     {
       sessionUserID,
       default: `/${picturesDir}/${avatarDefault}`,
@@ -273,7 +273,7 @@ router.delete("/avatar", (req, res, next) => {
         throw new NotFoundError("apiMyAvatarDeleteError");
       }
 
-      const { avatar } = record.get("aa");
+      const { avatar } = record.get("u").properties;
 
       return fs.rm(avatar.slice(1)).then(() => {
         res.status(200).json({
