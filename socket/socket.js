@@ -235,10 +235,15 @@ sio
                 "MATCH (u:User{sessionUserID:$sessionUserID})-[:JOINED]->(c:Conversation{id:$id})<-[:JOINED]-(u2:User) MERGE (u2)-[:UNREAD]->(c) RETURN u2",
                 { sessionUserID, id }
               )
-                .then(({records : [record]}) => {
+                .then(({ records: [record] }) => {
                   const friendId = record.get("u2").properties.id;
 
-                  sio.of(`/user/${friendId}`).emit("newMessage", `{"friendId": ${friendId}, "chatId": ${id}}`);
+                  sio
+                    .of(`/user/${friendId}`)
+                    .emit(
+                      "newMessage",
+                      `{"friendId": ${friendId}, "chatId": ${id}}`
+                    );
                 })
                 .catch((err) => next(err));
             }

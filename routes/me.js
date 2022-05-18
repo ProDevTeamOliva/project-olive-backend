@@ -293,7 +293,7 @@ router.get("/unread-chats", (req, res, next) => {
     { sessionUserID }
   )
     .then(({ records }) => {
-      const chats = records.map(record => {
+      const chats = records.map((record) => {
         let user = record.get("u2").properties;
         user.sessionUserID = undefined;
 
@@ -302,7 +302,7 @@ router.get("/unread-chats", (req, res, next) => {
 
       return res.status(200).json({
         message: "apiChatsFetchSuccess",
-        chats
+        chats,
       });
     })
     .catch((err) => next(err));
