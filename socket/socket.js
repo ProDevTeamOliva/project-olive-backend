@@ -265,7 +265,7 @@ sio
         const socketDummy = {
           request: {},
           nsp: {
-            name: payloadId,
+            name: `${payloadId}`,
           },
         };
         const nextDummy = (error) => {

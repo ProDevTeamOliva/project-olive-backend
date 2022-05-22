@@ -218,7 +218,17 @@ router.patch("/avatar", (req, res, next) => {
   }
 
   neo4jQueryWrapper(
-    "WITH $dirPrefix + randomUUID() + $dirSuffix AS avatar MATCH (ac:AvatarCounter), (u:User {sessionUserID: $sessionUserID}) CALL apoc.atomic.add(ac,'next',1) YIELD oldValue AS next MERGE (u)-[r:UPLOADED]->(a:Avatar {id: next, avatar: avatar}) SET u.avatar = avatar RETURN u,a",
+    `WITH $dirPrefix + randomUUID() + $dirSuffix AS avatar
+    MATCH (ac:AvatarCounter), (u:User {sessionUserID: $sessionUserID})
+    CALL apoc.atomic.add(ac,'next',1) YIELD oldValue AS next
+    MERGE (u)-[r:UPLOADED]->(a:Avatar {id: next, avatar: avatar})
+    SET u.avatar = avatar
+    WITH u,a
+    OPTIONAL MATCH (u)-[:UPLOADED]->(aa:Avatar)
+    WHERE aa.id <> a.id
+    WITH u,a, aa, properties(aa) AS avatarOld
+    DETACH DELETE aa
+    RETURN u,a, avatarOld`,
     {
       sessionUserID: userId.toString(),
       dirPrefix,
@@ -227,16 +237,24 @@ router.patch("/avatar", (req, res, next) => {
   )
     .then(({ records: [record] }) => {
       const avatarNode = record.get("a").properties;
+      const avatarOld = record.get("avatarOld");
       const user = record.get("u").properties;
       user.sessionUserID = undefined;
 
       saveBase64Picture(avatarNode.avatar, avatar);
 
+      if (avatarOld) {
+        return fs.rm(avatarOld.avatar.slice(1)).then(() => user);
+      }
+
+      return user;
+    })
+    .then((user) =>
       res.status(200).json({
         user,
         message: "apiMyAvatarSuccess",
-      });
-    })
+      })
+    )
     .catch((err) => next(err));
 });
 
@@ -262,7 +280,11 @@ router.delete("/avatar", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
-    "MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar) DETACH DELETE a SET u.avatar=$default RETURN u",
+    `MATCH (u:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(a:Avatar)
+    WITH u,a, properties(a) AS aa
+    DETACH DELETE a
+    SET u.avatar=$default
+    RETURN u,aa`,
     {
       sessionUserID,
       default: `/${picturesDir}/${avatarDefault}`,
@@ -274,10 +296,11 @@ router.delete("/avatar", (req, res, next) => {
       }
 
       const { avatar } = record.get("u").properties;
+      const { avatar: avatarOld } = record.get("aa");
 
-      return fs.rm(avatar.slice(1)).then(() => {
+      return fs.rm(avatarOld.slice(1)).then(() => {
         res.status(200).json({
-          avatar: avatar,
+          avatar,
           message: "apiMyAvatarDeleteSuccess",
         });
       });
