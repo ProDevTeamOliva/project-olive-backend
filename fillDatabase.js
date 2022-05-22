@@ -32,7 +32,7 @@ const users = [
     ],
     friends: ["PNowak", "ALewandowska", "JLewandowska"],
     likes: {
-      ROstrowski: [0, 1],
+      ROstrowski: [0],
     },
   },
   {
