@@ -35,8 +35,8 @@ router.get("/", parseIdQuery, (req, res, next) => {
         user.sessionUserID = undefined;
         post.user = user;
 
-        post.likes = record.get("l")
-        post.likesMe = record.get("lm")
+        post.likes = record.get("l");
+        post.likesMe = record.get("lm");
 
         return post;
       });
@@ -141,8 +141,8 @@ router.get("/:id", parseIdParam, (req, res, next) => {
       user.sessionUserID = undefined;
       post.user = user;
 
-      post.likes = record.get("l")
-      post.likesMe = record.get("lm")
+      post.likes = record.get("l");
+      post.likesMe = record.get("lm");
 
       res.status(200).json({
         post,
