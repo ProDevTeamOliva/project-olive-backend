@@ -78,7 +78,7 @@ router.post("/:id/friend", parseIdParam, (req, res, next) => {
   const idTarget = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT EXISTS((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1, p, u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT EXISTS((u1)-[:PENDING|FRIEND]-(u2)) AND u1.id <> u2.id MERGE (u1)-[p:PENDING]->(u2) RETURN u1, p, u2",
     {
       sessionUserID: idSource,
       id: idTarget,
@@ -106,7 +106,7 @@ router.post("/:id/accept", parseIdParam, (req, res, next) => {
   const idTargetUser = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User {id: $idTargetUser}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) WITH u1, f, u2 CALL apoc.do.when(EXISTS((u1)-[:JOINED]->(:Conversation)<-[:JOINED]-(u2)), 'RETURN u1, f, u2', 'MATCH (cc:ConversationCounter) CALL apoc.atomic.add(cc, \"next\", 1) YIELD oldValue AS next MERGE (u1)-[:JOINED]->(c:Conversation {id: next, active: true, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1, f, u2', {u1: u1, f: f, u2: u2}) YIELD value RETURN u1, f, u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User {id: $idTargetUser}) WHERE u1.id <> u2.id DELETE p MERGE (u1)-[f:FRIEND]-(u2) WITH u1, f, u2 CALL apoc.do.when(EXISTS((u1)-[:JOINED]->(:Conversation)<-[:JOINED]-(u2)), 'RETURN u1, f, u2', 'MATCH (cc:ConversationCounter) CALL apoc.atomic.add(cc, \"next\", 1) YIELD oldValue AS next MERGE (u1)-[:JOINED]->(c:Conversation {id: next, active: true, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1, f, u2', {u1: u1, f: f, u2: u2}) YIELD value RETURN u1, f, u2",
     {
       sessionUserID: idSource,
       idTargetUser,
@@ -134,7 +134,7 @@ router.delete("/:id/friend", parseIdParam, (req, res, next) => {
   const idTarget = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1, u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) WHERE u1.id <> u2.id DELETE r RETURN u1, u2",
     {
       sessionUserID: idSource,
       id: idTarget,
