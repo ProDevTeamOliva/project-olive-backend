@@ -237,22 +237,24 @@ router.patch("/avatar", (req, res, next) => {
   )
     .then(({ records: [record] }) => {
       const avatarNode = record.get("a").properties;
-      const avatarOld = record.get("avatarOld")
+      const avatarOld = record.get("avatarOld");
       const user = record.get("u").properties;
       user.sessionUserID = undefined;
 
       saveBase64Picture(avatarNode.avatar, avatar);
 
-      if(avatarOld) {
-        return fs.rm(avatarOld.avatar.slice(1)).then(() => user)
+      if (avatarOld) {
+        return fs.rm(avatarOld.avatar.slice(1)).then(() => user);
       }
 
-      return user
+      return user;
     })
-    .then(user => res.status(200).json({
+    .then((user) =>
+      res.status(200).json({
         user,
         message: "apiMyAvatarSuccess",
-    }))
+      })
+    )
     .catch((err) => next(err));
 });
 
