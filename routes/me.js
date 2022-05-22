@@ -2,8 +2,7 @@ const router = require("express").Router();
 const {
   saveBase64Picture,
   neo4jQueryWrapper,
-  validateFields,
-  deletePicture
+  validateFields
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
 const { parseIdQuery } = require("../utils/middlewares.js");
@@ -333,24 +332,27 @@ router.get("/unread-chats", (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.delete("/picture/:idPicture", (req, res, next) => {
+router.delete("/picture/:id", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
-  const idPicture = req.params.idPicture;
-  
+  const id = isNaN(req.params.id) ? undefined : parseInt(req.params.id);
+
+  if(!id) throw new NotFoundError("apiMyPictureDeleteError");
+
   neo4jQueryWrapper(
-    "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: idPicture}) DETACH DELETE p RETURN p",
-    { sessionUserID, idPicture }
+    "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: $id}) WITH p, properties(p) AS pp DETACH DELETE p RETURN pp",
+    { sessionUserID, id }
   )
     .then(({ records: [record] }) => {
       if (!record) {
         throw new NotFoundError("apiMyPictureDeleteError");
       }
 
-      const picture = record.get("p").properties;
-      deletePicture(picture.picture);
+      const picture = record.get("pp").picture;
 
-      return res.send(200).json({
-        message: "apiMyPictureDeleteSuccess"
+      return fs.rm(picture.slice(1)).then(() => {
+        res.status(200).json({
+          message: "apiMyPictureDeleteSuccess",
+        });
       });
     })
     .catch((err) => next(err));
