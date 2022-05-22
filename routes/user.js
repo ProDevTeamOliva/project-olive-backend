@@ -77,13 +77,13 @@ router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
 });
 
 router.post("/:id/friend", parseIdParam, (req, res, next) => {
-  const idSource = req.user._id;
+  const idSource = req.user._id.toString();
   const idTarget = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT exists((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1,p,u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID}) MATCH (u2:User{id: $id}) WHERE NOT EXISTS((u1)-[:PENDING|FRIEND]-(u2)) MERGE (u1)-[p:PENDING]->(u2) RETURN u1, p, u2",
     {
-      sessionUserID: idSource.toString(),
+      sessionUserID: idSource,
       id: idTarget,
     }
   )
@@ -92,7 +92,10 @@ router.post("/:id/friend", parseIdParam, (req, res, next) => {
         throw new FriendError("apiFriendPendingError");
       }
 
-      sio.of(`/user/${idTarget}`).emit("newFriendRequest", "");
+      const userId = record.get(record.keys[0]).properties?.id;
+
+      sio.of(`/user/${userId}`).emit("friendPendingSuccess");
+      sio.of(`/user/${idTarget}`).emit("friendPendingSuccess");
 
       res.status(201).json({
         message: "apiFriendPendingSuccess",
@@ -102,15 +105,14 @@ router.post("/:id/friend", parseIdParam, (req, res, next) => {
 });
 
 router.post("/:id/accept", parseIdParam, (req, res, next) => {
-  const idSource = req.user._id;
+  const idSource = req.user._id.toString();
   const idTargetUser = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (cc:ConversationCounter), (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User{id: $idTargetUser}) CALL apoc.atomic.add(cc,'next',1) YIELD oldValue AS next DELETE p MERGE (u1)-[f:FRIEND]-(u2) MERGE (u1)-[:JOINED]->(c:Conversation {id: next, active: $active, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1,f,u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID})<-[p:PENDING]-(u2:User {id: $idTargetUser}) DELETE p MERGE (u1)-[f:FRIEND]-(u2) WITH u1, f, u2 CALL apoc.do.when(EXISTS((u1)-[:JOINED]->(:Conversation)<-[:JOINED]-(u2)), 'RETURN u1, f, u2', 'MATCH (cc:ConversationCounter) CALL apoc.atomic.add(cc, \"next\", 1) YIELD oldValue AS next MERGE (u1)-[:JOINED]->(c:Conversation {id: next, active: true, creationDate: datetime()})<-[:JOINED]-(u2) RETURN u1, f, u2', {u1: u1, f: f, u2: u2}) YIELD value RETURN u1, f, u2",
     {
-      sessionUserID: idSource.toString(),
+      sessionUserID: idSource,
       idTargetUser,
-      active: true,
     }
   )
     .then(({ records: [record] }) => {
@@ -118,9 +120,10 @@ router.post("/:id/accept", parseIdParam, (req, res, next) => {
         throw new FriendError("apiFriendAcceptError");
       }
 
-      sio
-        .of(`/user/${idTargetUser}`)
-        .emit("friendRequestAccepted", `{"id": ${idSource}}`);
+      const userId = record.get(record.keys[0]).properties?.id;
+
+      sio.of(`/user/${userId}`).emit("friendAcceptSuccess");
+      sio.of(`/user/${idTargetUser}`).emit("friendAcceptSuccess");
 
       res.status(201).json({
         message: "apiFriendAcceptSuccess",
@@ -130,13 +133,13 @@ router.post("/:id/accept", parseIdParam, (req, res, next) => {
 });
 
 router.delete("/:id/friend", parseIdParam, (req, res, next) => {
-  const idSource = req.user._id;
+  const idSource = req.user._id.toString();
   const idTarget = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1,u2",
+    "MATCH (u1:User{sessionUserID: $sessionUserID})-[r:PENDING|FRIEND]-(u2:User{id: $id}) DELETE r RETURN u1, u2",
     {
-      sessionUserID: idSource.toString(),
+      sessionUserID: idSource,
       id: idTarget,
     }
   )
@@ -144,6 +147,12 @@ router.delete("/:id/friend", parseIdParam, (req, res, next) => {
       if (!record) {
         throw new FriendError("apiFriendRemoveError");
       }
+
+      const userId = record.get(record.keys[0]).properties?.id;
+
+      sio.of(`/user/${userId}`).emit("friendRemoveSuccess");
+      sio.of(`/user/${idTarget}`).emit("friendRemoveSuccess");
+
       res.status(200).json({
         message: "apiFriendRemoveSuccess",
       });
