@@ -2,7 +2,7 @@ const router = require("express").Router();
 const {
   saveBase64Picture,
   neo4jQueryWrapper,
-  validateFields
+  validateFields,
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
 const { parseIdQuery } = require("../utils/middlewares.js");
@@ -336,7 +336,7 @@ router.delete("/picture/:id", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
   const id = isNaN(req.params.id) ? undefined : parseInt(req.params.id);
 
-  if(!id) throw new NotFoundError("apiMyPictureDeleteError");
+  if (!id) throw new NotFoundError("apiMyPictureDeleteError");
 
   neo4jQueryWrapper(
     "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: $id}) WITH p, properties(p) AS pp DETACH DELETE p RETURN pp",

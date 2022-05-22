@@ -86,5 +86,5 @@ module.exports = {
   validateFields,
   disconnectSessionSockets,
   getCallback,
-  deletePicture
+  deletePicture,
 };
