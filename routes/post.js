@@ -94,11 +94,19 @@ router.post("/", (req, res, next) => {
 });
 
 router.get("/tag", (req, res, next) => {
+  const sessionUserID = req.user._id.toString();
   const tagPart = req.query.tagPart ?? "";
 
   neo4jQueryWrapper(
-    "MATCH (p:Post) UNWIND p.tags as t WITH t WHERE t STARTS WITH $tagPart RETURN DISTINCT t ORDER BY t LIMIT 15",
-    { type: "public", tagPart }
+    `MATCH (p:Post)<-[:POSTED]-(u:User)
+    WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u.sessionUserID=$sessionUserID OR (u)-[:FRIEND]-(:User{sessionUserID:$sessionUserID}))))
+    UNWIND p.tags AS t
+    WITH t
+    WHERE t STARTS WITH $tagPart
+    RETURN DISTINCT t
+    ORDER BY t
+    LIMIT 15`,
+    { typePublic: "public", typeFriends: "friends", tagPart, sessionUserID }
   )
     .then(({ records }) => {
       const tags = records.map((record) => record.get("t"));
