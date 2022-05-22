@@ -253,7 +253,7 @@ sio
           })
           .catch((err) => logger.error(err));
       })
-      .on("messegeDelete", (...args) => {
+      .on("messageRemove", (...args) => {
         const callback = getCallback(args);
         if (!callback) {
           return;
@@ -261,7 +261,22 @@ sio
 
         const sessionUserID = socket.request.user._id.toString();
 
-        const { id: idMessage } = args[0];
+        const payloadId = args[0].id;
+        const socketDummy = {
+          request: {},
+          nsp: {
+            name: payloadId,
+          },
+        };
+        const nextDummy = (error) => {
+          socketDummy.error = error;
+        };
+        parseIdParamWrapped(socketDummy, nextDummy);
+        if (socketDummy.error) {
+          return;
+        }
+
+        const { id: idMessage } = socketDummy.request.params;
 
         neo4jQueryWrapper(
           "MATCH (u:User {sessionUserID: $sessionUserID})-[:SENT]->(m:Message {id: $idMessage})-[:SENT_TO]->(c:Conversation {id: $id}) WITH m, properties(m) AS mm DETACH DELETE m RETURN mm",
@@ -278,7 +293,7 @@ sio
             const message = record.get("mm");
 
             const payload = { id: message.id };
-            socket.broadcast.emit("messegeDelete", payload);
+            socket.broadcast.emit("messageRemove", payload);
             callback(payload);
           })
           .catch((err) => logger.error(err));
