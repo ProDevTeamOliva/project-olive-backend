@@ -15,6 +15,14 @@ const saveBase64Picture = (filepath, image) => {
   });
 };
 
+const deletePicture = (filepath) => {
+  fs.rmSync("." + filepath, function (err) {
+    if (err) {
+      logger.info(err);
+    }
+  });
+};
+
 const neo4jQueryWrapper = (query, parameters) => {
   const session = driver.session();
   return session.run(query, parameters).finally((result) =>
@@ -78,4 +86,5 @@ module.exports = {
   validateFields,
   disconnectSessionSockets,
   getCallback,
+  deletePicture
 };

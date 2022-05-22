@@ -3,6 +3,7 @@ const {
   saveBase64Picture,
   neo4jQueryWrapper,
   validateFields,
+  deletePicture
 } = require("../utils/utils.js");
 const { validatePicturesSize } = require("../utils/validators");
 const { parseIdQuery } = require("../utils/middlewares.js");
@@ -319,6 +320,29 @@ router.get("/unread-chats", (req, res, next) => {
       return res.status(200).json({
         message: "apiChatsFetchSuccess",
         chats,
+      });
+    })
+    .catch((err) => next(err));
+});
+
+router.delete("/picture/:idPicture", (req, res, next) => {
+  const sessionUserID = req.user._id.toString();
+  const idPicture = req.params.idPicture;
+  
+  neo4jQueryWrapper(
+    "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: idPicture}) DETACH DELETE p RETURN p",
+    { sessionUserID, idPicture }
+  )
+    .then(({ records: [record] }) => {
+      if (!record) {
+        throw new NotFoundError("apiMyPictureDeleteError");
+      }
+
+      const picture = record.get("p").properties;
+      deletePicture(picture.picture);
+
+      return res.send(200).json({
+        message: "apiMyPictureDeleteSuccess"
       });
     })
     .catch((err) => next(err));
