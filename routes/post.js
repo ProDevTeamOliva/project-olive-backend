@@ -25,7 +25,10 @@ router.get("/", parseIdQuery, (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post)<-[:POSTED]-(u:User) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1)))) ${
       whereSetup.length > 1 ? whereSetup.join(" AND ") : ""
-    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p,u,u1, collect(u2) AS u2l RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm ORDER BY p.date DESC LIMIT 15`,
+    }
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, collect(u2) AS u2l, count(c) AS c
+    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
     { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )
     .then(({ records }) => {
@@ -37,6 +40,7 @@ router.get("/", parseIdQuery, (req, res, next) => {
 
         post.likes = record.get("l");
         post.likesMe = record.get("lm");
+        post.comments = record.get("c");
 
         return post;
       });
@@ -123,8 +127,9 @@ router.get("/:id", parseIdParam, (req, res, next) => {
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post {id: $id})<-[:POSTED]-(u:User)
     WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1))))
     OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
-    WITH p,u,u1, collect(u2) AS u2l
-    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm`,
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
+    WITH p,u,u1, collect(u2) AS u2l, count(c) AS c
+    RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c`,
     {
       id,
       sessionUserID,
@@ -143,6 +148,7 @@ router.get("/:id", parseIdParam, (req, res, next) => {
 
       post.likes = record.get("l");
       post.likesMe = record.get("lm");
+      post.comments = record.get("c");
 
       res.status(200).json({
         post,
@@ -157,7 +163,7 @@ router.delete("/:id", parseIdParam, (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
-    "MATCH (p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) detach delete p RETURN p",
+    "MATCH (p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) DETACH DELETE p RETURN p",
     {
       id,
       sessionUserID,

@@ -84,7 +84,10 @@ router.get("/post", parseIdQuery, (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (p:Post)<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) ${
       id !== undefined ? "WHERE p.id < $id" : ""
-    } OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p,u, collect(u2) AS u2l RETURN p, u, size(u2l) AS l, u IN u2l AS lm ORDER BY p.date DESC LIMIT 15`,
+    }
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p,u, collect(u2) AS u2l, count(c) as c
+    RETURN p, u, size(u2l) AS l, u IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
     { sessionUserID, id }
   )
     .then(({ records }) => {
@@ -96,6 +99,7 @@ router.get("/post", parseIdQuery, (req, res, next) => {
 
         post.likes = record.get("l");
         post.likesMe = record.get("lm");
+        post.comments = record.get("c");
 
         return post;
       });
@@ -112,7 +116,10 @@ router.get("/like", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
-    "MATCH (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(:User{sessionUserID:$sessionUserID}) OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) RETURN p, u, count(u2) as l ORDER BY p.date DESC",
+    `MATCH (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(:User{sessionUserID:$sessionUserID})
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
+    RETURN p, u, count(u2) as l, count(c) AS c ORDER BY p.date DESC`,
     { sessionUserID }
   )
     .then(({ records }) => {
@@ -123,6 +130,7 @@ router.get("/like", (req, res, next) => {
         post.user = user;
 
         post.likes = record.get("l");
+        post.comments = record.get("c");
 
         return post;
       });
