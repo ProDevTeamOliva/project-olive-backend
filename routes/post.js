@@ -107,7 +107,10 @@ router.post("/", (req, res, next) => {
           const picture = record.properties.picture;
           saveBase64Picture(picture, picturesParsed[index].base64);
           return picture;
-        })
+        }),
+        comments: 0,
+        likes: 0,
+        likesMe: false
       };
       post.user.sessionUserID = undefined;
 

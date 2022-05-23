@@ -219,7 +219,7 @@ router.post("/picture", (req, res, next) => {
   }));
 
   neo4jQueryWrapper(
-    "UNWIND $pictures as picture WITH picture, $dirPrefix + randomUUID() + picture.dirSuffix AS dir MATCH (pc:PictureCounter), (u:User {sessionUserID: $sessionUserID}) CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next MERGE (u)-[r:UPLOADED]->(p:Picture {id: next, picture: dir, private: picture.private}) RETURN p",
+    "UNWIND $pictures as picture WITH picture, $dirPrefix + randomUUID() + picture.dirSuffix AS dir MATCH (pc:PictureCounter), (u:User {sessionUserID: $sessionUserID}) CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next MERGE (u)-[r:UPLOADED]->(p:Picture {id: next, picture: dir, private: picture.private}) RETURN p ORDER BY p.date DESC",
     {
       sessionUserID: id.toString(),
       pictures: picturesParsed,
