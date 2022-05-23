@@ -79,12 +79,15 @@ router.post("/", (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (pc:PostCounter), (u:User{sessionUserID:$sessionUserID})
     CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next
-    MERGE (u)-[:POSTED]->(p:Post{id: next, content:$content, tags:$tags, type:$type, date:datetime(), pictures:$pictures})
+    MERGE (u)-[:POSTED]->(p:Post{id: next, content:$content, tags:$tags, type:$type, date:datetime()})
+    WITH p, u
     UNWIND $pictures as picture WITH p, u, picture, $dirPrefix + randomUUID() + picture.dirSuffix AS dir
     MATCH (picC:PictureCounter)
     CALL apoc.atomic.add(picC,'next',1) YIELD oldValue AS next
-    CREATE (u)-[:UPLOADED]->(pic:Picture {id: next, private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
-    WITH p, u, collect(pic) as pic
+    MERGE (u)-[:UPLOADED]->(pic:Picture {id: next, private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
+    WITH p, u
+    MATCH (pic:Picture)-[:ATTACHED]->(p)
+    WITH p, u, collect(DISTINCT pic) as pic
     RETURN p, u, pic`,
     {
       postId: uuidv4(),
