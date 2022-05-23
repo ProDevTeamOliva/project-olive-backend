@@ -36,7 +36,9 @@ router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
       idPost !== undefined ? "AND p.id < $idPost" : ""
     }
     OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH u,u1,p,collect(u2) AS u2l, count(c) AS c
+    WITH count(c) AS c, u,p,u1
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
+    WITH u,u1,p,collect(u2) AS u2l, c
     RETURN u, p, size(u2l) AS l, u1 IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
     {
       id,
