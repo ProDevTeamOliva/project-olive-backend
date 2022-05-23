@@ -183,7 +183,15 @@ sio
         neo4jQueryWrapper(
           "MATCH (c:Conversation{id:$id})<-[r:UNREAD]-(u:User {sessionUserID:$sessionUserID}) DELETE r RETURN c, u",
           { sessionUserID, id }
-        ).catch((err) => logger.error(err));
+        )
+          .then(({ records: [record] }) => {
+            if (record) {
+              const userId = record.get("u").properties.id;
+
+              sio.of(`/user/${userId}`).emit("readConversation");
+            }
+          })
+          .catch((err) => logger.error(err));
       })
       .on("message", (...args) => {
         const callback = getCallback(args);
@@ -229,8 +237,23 @@ sio
               conversationId,
             };
 
-            const clientsCount = sio.of(socket.nsp.name).sockets.size;
-            if (clientsCount == 1) {
+            // const clientsCount = sio.of(socket.nsp.name).sockets.size;
+
+            const onlyUser = [...sio.of(socket.nsp.name).sockets].reduce(
+              (result, [_, socket]) => {
+                return result && socket.request.user.login === userLogin;
+              },
+              true
+            );
+
+            const onlyUser2 = Array.from(
+              sio.of(socket.nsp.name).sockets,
+              ([_, socket]) => socket
+            ).reduce((result, socket) => {
+              return result && socket.request.user.login === userLogin;
+            }, true);
+
+            if (onlyUser) {
               neo4jQueryWrapper(
                 "MATCH (u:User{sessionUserID:$sessionUserID})-[:JOINED]->(c:Conversation{id:$id})<-[:JOINED]-(u2:User) MERGE (u2)-[:UNREAD]->(c) RETURN u2",
                 { sessionUserID, id }
