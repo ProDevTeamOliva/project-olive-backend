@@ -27,7 +27,9 @@ router.get("/", parseIdQuery, (req, res, next) => {
       whereSetup.length > 1 ? whereSetup.join(" AND ") : ""
     }
     OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, collect(u2) AS u2l, count(c) AS c
+    WITH count(c) AS c, p, u, u1
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
+    WITH p, u, u1, collect(u2) AS u2l, c
     RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
     { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )
@@ -126,9 +128,10 @@ router.get("/:id", parseIdParam, (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post {id: $id})<-[:POSTED]-(u:User)
     WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1))))
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
     OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    WITH p,u,u1, collect(u2) AS u2l, count(c) AS c
+    WITH count(c) AS c, p,u1,u
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
+    WITH p,u,u1, collect(u2) AS u2l, c
     RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c`,
     {
       id,
