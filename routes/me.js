@@ -120,9 +120,10 @@ router.get("/like", (req, res, next) => {
 
   neo4jQueryWrapper(
     `MATCH (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(:User{sessionUserID:$sessionUserID})
-    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH p, u, count(c) AS c
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, c, count(u2) as l
-    RETURN p, u, l, c ORDER BY p.date DESC`,
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p) WITH p, u, collect(pic) AS pic
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH p, u, pic, count(c) AS c
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, pic, c, count(u2) as l
+    RETURN p, u, l, pic, c ORDER BY p.date DESC`,
     { sessionUserID }
   )
     .then(({ records }) => {
@@ -134,6 +135,7 @@ router.get("/like", (req, res, next) => {
 
         post.likes = record.get("l");
         post.comments = record.get("c");
+        post.pictures = record.get("pic").map(pic => pic.properties.picture);
 
         return post;
       });
