@@ -28,9 +28,9 @@ router.get("/", parseIdQuery, (req, res, next) => {
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post)<-[:POSTED]-(u:User) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1)))) ${
       whereSetup.length > 1 ? whereSetup.join(" AND ") : ""
     }
-    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p)
-    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, collect(u2) AS u2l, count(c) AS c, collect(pic) AS pic
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p) WITH p, u, u1, collect(pic) AS pic
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH p, u, u1, pic, count(c) AS c
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH p, u, u1, pic, c, collect(u2) AS u2l
     RETURN p, u, size(u2l) AS l, u1 IN u2l AS lm, c, pic ORDER BY p.date DESC LIMIT 15`,
     { tag, id, typePublic: "public", typeFriends: "friends", sessionUserID }
   )

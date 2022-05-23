@@ -35,9 +35,9 @@ router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
     `MATCH (u:User{id:$id}), (u1:User{sessionUserID:$sessionUserID})OPTIONAL MATCH (p:Post)<-[:POSTED]-(u) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1)))) ${
       idPost !== undefined ? "AND p.id < $idPost" : ""
     }
-    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p)
-    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH u,u1,p,collect(u2) AS u2l, count(c) AS c, collect(pic) as pic
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p) WITH u, u1, p, collect(pic) as pic
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH u, u1, p, pic, count(c) AS c
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH u, u1, p, pic, c, collect(u2) AS u2l
     RETURN u, p, size(u2l) AS l, u1 IN u2l AS lm, c, pic ORDER BY p.date DESC LIMIT 15`,
     {
       id,
