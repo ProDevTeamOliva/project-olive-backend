@@ -45,7 +45,7 @@ router.get("/", parseIdQuery, (req, res, next) => {
         post.likesMe = record.get("lm");
         post.comments = record.get("c");
 
-        post.pictures = record.get("pic").map(pic => pic.properties.picture);
+        post.pictures = record.get("pic").map((pic) => pic.properties.picture);
 
         return post;
       });
@@ -73,7 +73,7 @@ router.post("/", (req, res, next) => {
   const picturesParsed = (pictures ?? []).map((element) => ({
     private: false,
     base64: element.picture,
-    dirSuffix: `-${element.filename}`
+    dirSuffix: `-${element.filename}`,
   }));
 
   neo4jQueryWrapper(
@@ -110,7 +110,7 @@ router.post("/", (req, res, next) => {
         }),
         comments: 0,
         likes: 0,
-        likesMe: false
+        likesMe: false,
       };
       post.user.sessionUserID = undefined;
 
@@ -178,7 +178,7 @@ router.get("/:id", parseIdParam, (req, res, next) => {
       post.likesMe = record.get("lm");
       post.comments = record.get("c");
 
-      post.pictures = record.get("pic").map(pic => pic.properties.picture);
+      post.pictures = record.get("pic").map((pic) => pic.properties.picture);
 
       res.status(200).json({
         post,

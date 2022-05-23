@@ -102,7 +102,7 @@ router.get("/post", parseIdQuery, (req, res, next) => {
         post.likesMe = record.get("lm");
         post.comments = record.get("c");
 
-        post.pictures = record.get("pic").map(pic => pic.properties.picture);
+        post.pictures = record.get("pic").map((pic) => pic.properties.picture);
 
         return post;
       });
@@ -135,7 +135,7 @@ router.get("/like", (req, res, next) => {
 
         post.likes = record.get("l");
         post.comments = record.get("c");
-        post.pictures = record.get("pic").map(pic => pic.properties.picture);
+        post.pictures = record.get("pic").map((pic) => pic.properties.picture);
 
         return post;
       });

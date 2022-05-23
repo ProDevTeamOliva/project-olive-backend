@@ -64,7 +64,9 @@ router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
           post.likesMe = record.get("lm");
           post.comments = record.get("c");
 
-          post.pictures = record.get("pic").map(pic => pic.properties.picture)
+          post.pictures = record
+            .get("pic")
+            .map((pic) => pic.properties.picture);
 
           result.push(post);
         }
