@@ -194,7 +194,7 @@ router.get("/:id/comment", parseIdParam, parseIdQuery, (req, res, next) => {
     }
     RETURN u, c, p
     ORDER BY c.date DESC
-    LIMIT 2`,
+    LIMIT 15`,
     {
       idPost,
       sessionUserID,
