@@ -183,8 +183,8 @@ router.delete("/:id", parseIdParam, (req, res, next) => {
 
 router.get("/:id/comment", parseIdParam, parseIdQuery, (req, res, next) => {
   const sessionUserID = req.user._id.toString();
-  const {id: idPost} = req.params;
-  const {id: idComment} = req.query
+  const { id: idPost } = req.params;
+  const { id: idComment } = req.query;
 
   neo4jQueryWrapper(
     `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post {id: $idPost})<-[:POSTED]-(u2:User)
@@ -209,18 +209,18 @@ router.get("/:id/comment", parseIdParam, parseIdQuery, (req, res, next) => {
       }
 
       const comments = records.reduce((result, record) => {
-        const commentNode = record.get("c")
+        const commentNode = record.get("c");
 
-        if(commentNode) {
+        if (commentNode) {
           const postId = record.get("p").properties.id;
           const user = record.get("u").properties;
           user.sessionUserID = undefined;
-  
+
           const comment = commentNode.properties;
           comment.postId = postId;
           comment.user = user;
 
-          result.push(comment)
+          result.push(comment);
         }
 
         return result;
