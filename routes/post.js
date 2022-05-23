@@ -208,32 +208,50 @@ router.delete("/:id", parseIdParam, (req, res, next) => {
     .catch((err) => next(err));
 });
 
-router.get("/:id/comment", parseIdParam, (req, res, next) => {
-  const idSource = req.user._id;
-  const idTarget = req.params.id;
+router.get("/:id/comment", parseIdParam, parseIdQuery, (req, res, next) => {
+  const sessionUserID = req.user._id.toString();
+  const { id: idPost } = req.params;
+  const { id: idComment } = req.query;
 
   neo4jQueryWrapper(
-    "MATCH (u:User)-[:COMMENTED]->(c:Comment)-[:UNDER]->(p:Post{id: $idPost}) RETURN u, c, p ORDER BY c.date DESC",
+    `MATCH (u1:User{sessionUserID:$sessionUserID}), (p:Post {id: $idPost})<-[:POSTED]-(u2:User)
+    WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u2=u1 OR (u2)-[:FRIEND]-(u1)))) 
+    OPTIONAL MATCH (u:User)-[:COMMENTED]->(c:Comment)-[:UNDER]->(p:Post{id: $idPost}) ${
+      idComment !== undefined ? "WHERE c.id < $idComment" : ""
+    }
+    RETURN u, c, p
+    ORDER BY c.date DESC
+    LIMIT 15`,
     {
-      idPost: idTarget,
+      idPost,
+      sessionUserID,
+      idComment,
+      typePublic: "public",
+      typeFriends: "friends",
     }
   )
     .then(({ records }) => {
-      if (!records) {
+      if (!records.length) {
         throw new PostError("apiCommentsGetError");
       }
 
-      const comments = records.map((record) => {
-        const postId = record.get("p").properties.id;
-        const user = record.get("u").properties;
-        user.sessionUserID = undefined;
+      const comments = records.reduce((result, record) => {
+        const commentNode = record.get("c");
 
-        const comment = record.get("c").properties;
-        comment.postId = postId;
-        comment.user = user;
+        if (commentNode) {
+          const postId = record.get("p").properties.id;
+          const user = record.get("u").properties;
+          user.sessionUserID = undefined;
 
-        return comment;
-      });
+          const comment = commentNode.properties;
+          comment.postId = postId;
+          comment.user = user;
+
+          result.push(comment);
+        }
+
+        return result;
+      }, []);
 
       res.status(200).json({
         message: "apiCommentsGetSuccess",
