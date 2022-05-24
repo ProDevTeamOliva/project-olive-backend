@@ -86,7 +86,9 @@ router.post("/", (req, res, next) => {
     CALL apoc.do.when(
       size(pictures) > 0,
       'UNWIND pictures as picture WITH p, u, picture, dirPrefix + randomUUID() + picture.dirSuffix AS dir
-      MERGE (u)-[:UPLOADED]->(pic:Picture {id: randomUUID(), private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
+      MATCH (picC:PictureCounter)
+      CALL apoc.atomic.add(picC,"next",1) YIELD oldValue AS next
+      MERGE (u)-[:UPLOADED]->(pic:Picture {id: next, private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
       
       WITH p, u, collect(DISTINCT pic) as pic
       RETURN p, u, pic',
