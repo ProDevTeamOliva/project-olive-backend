@@ -35,11 +35,10 @@ router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
     `MATCH (u:User{id:$id}), (u1:User{sessionUserID:$sessionUserID})OPTIONAL MATCH (p:Post)<-[:POSTED]-(u) WHERE (p.type=$typePublic OR (p.type=$typeFriends AND (u=u1 OR (u)-[:FRIEND]-(u1)))) ${
       idPost !== undefined ? "AND p.id < $idPost" : ""
     }
-    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p)
-    WITH count(c) AS c, u,p,u1
-    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User)
-    WITH u,u1,p,collect(u2) AS u2l, c
-    RETURN u, p, size(u2l) AS l, u1 IN u2l AS lm, c ORDER BY p.date DESC LIMIT 15`,
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p) WITH u, u1, p, collect(pic) as pic
+    OPTIONAL MATCH (c:Comment)-[:UNDER]->(p) WITH u, u1, p, pic, count(c) AS c
+    OPTIONAL MATCH (p)<-[:LIKED]-(u2:User) WITH u, u1, p, pic, c, collect(u2) AS u2l
+    RETURN u, p, size(u2l) AS l, u1 IN u2l AS lm, c, pic ORDER BY p.date DESC LIMIT 15`,
     {
       id,
       typePublic: "public",
@@ -64,6 +63,10 @@ router.get("/:id/post", parseIdParam, parseIdQuery, (req, res, next) => {
           post.likes = record.get("l");
           post.likesMe = record.get("lm");
           post.comments = record.get("c");
+
+          post.pictures = record
+            .get("pic")
+            .map((pic) => pic.properties.picture);
 
           result.push(post);
         }
@@ -167,7 +170,37 @@ router.get("/:id/picture", parseIdParam, (req, res, next) => {
   const id = req.params.id;
 
   neo4jQueryWrapper(
-    "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[UPLOADED]->(p: Picture {private: $private}) RETURN p",
+    "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[:UPLOADED]->(p: Picture {private: $private}) WHERE NOT (p)-[:ATTACHED]->(:Post) RETURN p",
+    {
+      id,
+      private: false,
+    }
+  )
+    .then(({ records }) => {
+      if (!records.length) {
+        throw new NotFoundError("apiUserNotFoundError");
+      }
+
+      const pictures = records.reduce((result, record) => {
+        const pictureNode = record.get("p");
+        if (pictureNode) {
+          result.push(pictureNode.properties);
+        }
+        return result;
+      }, []);
+      res.status(200).json({
+        pictures,
+        message: "apiUserPicturesSuccess",
+      });
+    })
+    .catch((err) => next(err));
+});
+
+router.get("/:id/all-pictures", (req, res, next) => {
+  const id = req.params.id;
+
+  neo4jQueryWrapper(
+    "MATCH (u:User {id: $id}) OPTIONAL MATCH (u)-[]->(p: Picture {private: $private}) RETURN p",
     {
       id,
       private: false,
