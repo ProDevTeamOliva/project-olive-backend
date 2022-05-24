@@ -210,11 +210,11 @@ router.post("/picture", (req, res, next) => {
     return;
   }
 
-  if (!validatePicturesSize(next, pictures)) {
+  if (!validatePicturesSize(next, pictures ?? [])) {
     return;
   }
 
-  const picturesParsed = pictures.map((element) => ({
+  const picturesParsed = (pictures ?? []).map((element) => ({
     private: element.private,
     base64: element.picture,
     dirSuffix: `-${element.filename}`,

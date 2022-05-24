@@ -45,7 +45,7 @@ router.get("/", parseIdQuery, (req, res, next) => {
         post.likesMe = record.get("lm");
         post.comments = record.get("c");
 
-        post.pictures = record.get("pic").map(pic => pic.properties.picture);
+        post.pictures = record.get("pic").map((pic) => pic.properties.picture);
 
         return post;
       });
@@ -66,29 +66,34 @@ router.post("/", (req, res, next) => {
     return;
   }
 
-  if (!validatePicturesSize(next, pictures)) {
+  if (!validatePicturesSize(next, pictures ?? [])) {
     return;
   }
 
   const picturesParsed = (pictures ?? []).map((element) => ({
     private: false,
     base64: element.picture,
-    dirSuffix: `-${element.filename}`
+    dirSuffix: `-${element.filename}`,
   }));
 
   neo4jQueryWrapper(
     `MATCH (pc:PostCounter), (u:User{sessionUserID:$sessionUserID})
     CALL apoc.atomic.add(pc,'next',1) YIELD oldValue AS next
     MERGE (u)-[:POSTED]->(p:Post{id: next, content:$content, tags:$tags, type:$type, date:datetime()})
-    WITH p, u
-    UNWIND $pictures as picture WITH p, u, picture, $dirPrefix + randomUUID() + picture.dirSuffix AS dir
-    MATCH (picC:PictureCounter)
-    CALL apoc.atomic.add(picC,'next',1) YIELD oldValue AS next
-    MERGE (u)-[:UPLOADED]->(pic:Picture {id: next, private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
-    WITH p, u
-    MATCH (pic:Picture)-[:ATTACHED]->(p)
-    WITH p, u, collect(DISTINCT pic) as pic
-    RETURN p, u, pic`,
+    
+    WITH p, u, $pictures as pictures
+    
+    CALL apoc.do.when(
+      size(pictures) > 0,
+      'UNWIND pictures as picture WITH p, u, picture, dirPrefix + randomUUID() + picture.dirSuffix AS dir
+      MERGE (u)-[:UPLOADED]->(pic:Picture {id: randomUUID(), private: picture.private, date: datetime(), picture: dir})-[:ATTACHED]->(p)
+      
+      WITH p, u, collect(DISTINCT pic) as pic
+      RETURN p, u, pic',
+      'RETURN p, u, pictures as pic',
+      {p:p, u:u, pictures:pictures, dirPrefix:$dirPrefix}
+    ) YIELD value
+    RETURN value.p AS p, value.u AS u, value.pic AS pic`,
     {
       postId: uuidv4(),
       content,
@@ -110,7 +115,7 @@ router.post("/", (req, res, next) => {
         }),
         comments: 0,
         likes: 0,
-        likesMe: false
+        likesMe: false,
       };
       post.user.sessionUserID = undefined;
 
@@ -178,7 +183,7 @@ router.get("/:id", parseIdParam, (req, res, next) => {
       post.likesMe = record.get("lm");
       post.comments = record.get("c");
 
-      post.pictures = record.get("pic").map(pic => pic.properties.picture);
+      post.pictures = record.get("pic").map((pic) => pic.properties.picture);
 
       res.status(200).json({
         post,
