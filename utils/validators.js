@@ -24,7 +24,7 @@ const validatePicturesSize = (next, picturesArray) => {
       "base64"
     );
 
-    if (buffer.length / 1e+6 <= 3) {
+    if (buffer.length / 1e6 <= 3) {
       return true;
     }
 
