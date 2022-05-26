@@ -6,7 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon",
-    "fill": "node ./fillDatabase.js"
+    "prod": "node index.js",
+    "fill": "node fillDatabase.js",
+    "delete": "rm -rf data logs",
+    "deleteWin": "rmdir /s /q data logs || exit 0",
+    "linkEnv": "rm -f .env ; ln -s ../project-olive-main/.env .env",
+    "linkEnvWin": "del /q .env & powershell start powershell -ArgumentList '-command Set-Location %cd% ; New-Item -ItemType SymbolicLink -Path .env -Target ../project-olive-main/.env' -Verb runAs"
   },
   "repository": {
     "type": "git",
@@ -21,14 +26,14 @@
   "homepage": "https://github.com/ProDevTeamOliva/project-olive-backend#readme",
   "devDependencies": {
     "axios": "^0.26.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
     "nodemon": "^2.0.15",
     "prettier": "2.4.1"
   },
   "dependencies": {
     "connect-mongo": "^4.6.0",
     "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
     "mongodb": "^4.4.1",

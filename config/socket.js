@@ -2,14 +2,11 @@ const { Server } = require("socket.io");
 const passport = require("passport");
 const expressSession = require("./session");
 const { wrapMiddleware } = require("../utils/middlewares");
-const originHost = require("./originHost");
 const server = require("./server");
+const isDevelopment = require("./isDevelopment");
 
 const sio = new Server(server, {
-  cors: {
-    origin: originHost,
-    credentials: true,
-  },
+  cors: isDevelopment ? require("./cors") : undefined,
 });
 
 sio.ofOriginal = sio.of;
