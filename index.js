@@ -1,4 +1,4 @@
-const isDevelopment = require("./isDevelopment")
+const isDevelopment = require("./config/isDevelopment")
 if(isDevelopment) {
   require("dotenv").config();
 }
