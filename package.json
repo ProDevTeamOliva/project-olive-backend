@@ -6,8 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon",
-    "prod": "NODE_ENV=production node index.js",
-    "prodWin": "set \"NODE_ENV=production\" && node index.js",
+    "prod": "node index.js",
     "fill": "node fillDatabase.js",
     "delete": "rm -rf data logs",
     "deleteWin": "rmdir /s /q data logs || exit 0",

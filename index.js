@@ -54,7 +54,7 @@ app.use(router);
 const errorHandler = require("./utils/errorHandler");
 app.use(errorHandler);
 
-const port = process.env.EXPRESS_PORT;
+const port = process.env.EXPRESS_PORT || 5000;
 
 server.listen(port, () => {
   logger.info(`Server listening on port ${port}`);
