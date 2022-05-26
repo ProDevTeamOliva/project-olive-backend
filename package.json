@@ -6,7 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon",
-    "fill": "node ./fillDatabase.js"
+    "prod": "node index.js",
+    "fill": "node fillDatabase.js",
+    "delete": "rm -rf data logs",
+    "deleteWin": "rmdir /s /q data logs || exit 0",
+    "linkEnv": "rm -f .env ; ln -s ../project-olive-main/.env .env",
+    "linkEnvWin": "del /q .env & powershell start powershell -ArgumentList '-command Set-Location %cd% ; New-Item -ItemType SymbolicLink -Path .env -Target ../project-olive-main/.env' -Verb runAs"
   },
   "repository": {
     "type": "git",
