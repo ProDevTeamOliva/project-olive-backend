@@ -8,7 +8,7 @@ const SessionUser = require("./models/SessionUser");
 const { neo4jQueryWrapper } = require("./utils/utils");
 const store = require("./config/mongoStore");
 const fs = require("fs");
-const { picturesDir, avatarDefault: avatar } = require("./utils/constants");
+const { picturesDir } = require("./utils/constants");
 
 const users = [
   {
@@ -188,12 +188,8 @@ const fillDatabase = async () => {
   );
   console.log("Cleared Neo4J");
 
-  const temp = fs.mkdtempSync("chattermatter");
-  fs.renameSync(`${picturesDir}/${avatar}`, `${temp}/${avatar}`);
   fs.rmSync(picturesDir, { recursive: true });
   fs.mkdirSync(picturesDir);
-  fs.renameSync(`${temp}/${avatar}`, `${picturesDir}/${avatar}`);
-  fs.rmdirSync(temp);
   console.log("Cleared pictures");
 
   for (let i = 0; i < users.length; i++) {

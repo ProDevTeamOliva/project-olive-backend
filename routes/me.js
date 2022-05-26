@@ -321,7 +321,7 @@ router.delete("/avatar", (req, res, next) => {
     RETURN u,aa`,
     {
       sessionUserID,
-      default: `/${picturesDir}/${avatarDefault}`,
+      default: `/${avatarDefault}`,
     }
   )
     .then(({ records: [record] }) => {

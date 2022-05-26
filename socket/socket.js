@@ -314,6 +314,6 @@ sio
       });
   });
 
-logger.info("WebSocket initialized!");
+logger.info("Socket.IO initialized");
 
 module.exports = sio;

@@ -1,9 +1,4 @@
-avatar=avatar_default.png
-pics=public/pictures
-mv $pics/$avatar /tmp/
-rm -r $pics
-mkdir $pics
-mv /tmp/$avatar $pics/
-rm -r logs
+rm -rf data
+rm -rf logs
 
 docker-compose down -v --rmi local
