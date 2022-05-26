@@ -13,7 +13,7 @@ const driver = neo4j.driver(
     disableLosslessIntegers: true,
   }
 );
-driver
+const verify = () => driver
   .verifyConnectivity()
   .then(() => {
     logger.info("Connected to Neo4J");
@@ -41,6 +41,8 @@ driver
   })
   .catch((error) => {
     logger.error("Can't connect to Neo4J\n", error);
+    setTimeout(verify, 5000)
   });
+verify()
 
 module.exports = driver;
