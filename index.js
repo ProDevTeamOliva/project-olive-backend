@@ -9,7 +9,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const session = require("./config/session");
 const originHost = require("./config/originHost");
-require("./socket/socket")
+require("./socket/socket");
 const logger = require("./config/logger");
 const { picturesDir } = require("./utils/constants");
 const SessionUser = require("./models/SessionUser");

@@ -1,4 +1,4 @@
-const express = require("express")
+const express = require("express");
 const router = require("express").Router();
 const access = require("./access");
 const user = require("./user");
@@ -14,7 +14,10 @@ router.use("/user", authenticationCheck, user);
 router.use("/post", authenticationCheck, post);
 
 router.use(`/public`, [authenticationCheck, express.static("public")]);
-router.use(`/${picturesDir}`, [authenticationCheck, express.static(picturesDir)]);
+router.use(`/${picturesDir}`, [
+  authenticationCheck,
+  express.static(picturesDir),
+]);
 
 router.use((req, res, next) => {
   next(new NotFoundError("apiRouteNotFoundError"));
