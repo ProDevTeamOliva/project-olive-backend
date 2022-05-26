@@ -31,7 +31,7 @@ router.post("/register", (req, res, next) => {
         nameLast,
         login,
         sessionUserID,
-        avatar: `/${picturesDir}/${avatarDefault}`,
+        avatar: `/${avatarDefault}`,
       }
     )
       .then(() =>

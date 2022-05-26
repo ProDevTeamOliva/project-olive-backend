@@ -1,6 +1,5 @@
 node_modules/
 .env
-public/pictures/*
-!public/pictures/avatar_default.png
-logs
+data/
+logs/
 .jshintrc
