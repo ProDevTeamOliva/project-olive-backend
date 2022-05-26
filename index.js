@@ -1,5 +1,5 @@
-const isDevelopment = require("./config/isDevelopment")
-if(isDevelopment) {
+const isDevelopment = require("./config/isDevelopment");
+if (isDevelopment) {
   require("dotenv").config();
 }
 
@@ -23,7 +23,7 @@ if (!fs.existsSync(picturesDir)) {
   fs.mkdirSync(picturesDir, { recursive: true });
 }
 
-if(isDevelopment) {
+if (isDevelopment) {
   const cors = require("cors");
   const corsConfig = require("./config/cors");
   app.use(cors(corsConfig));

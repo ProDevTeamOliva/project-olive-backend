@@ -3,7 +3,7 @@ const passport = require("passport");
 const expressSession = require("./session");
 const { wrapMiddleware } = require("../utils/middlewares");
 const server = require("./server");
-const isDevelopment = require("./isDevelopment")
+const isDevelopment = require("./isDevelopment");
 
 const sio = new Server(server, {
   cors: isDevelopment ? require("./cors") : undefined,
