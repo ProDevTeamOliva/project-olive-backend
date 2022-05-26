@@ -7,7 +7,7 @@ const isDevelopment = require("./isDevelopment");
 
 const sio = new Server(server, {
   cors: isDevelopment ? require("./cors") : undefined,
-  path: "/socket.io/"
+  path: "/socket.io/",
 });
 
 sio.ofOriginal = sio.of;
