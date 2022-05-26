@@ -1,7 +1,7 @@
 require("./index");
 
 const axios = require("axios").default;
-axios.defaults.baseURL = `http://localhost:${process.env.EXPRESS_PORT}`;
+axios.defaults.baseURL = `http://localhost:${process.env.REACT_APP_EXPRESS_PORT || 5000}`;
 axios.defaults.withCredentials = true;
 
 const SessionUser = require("./models/SessionUser");
