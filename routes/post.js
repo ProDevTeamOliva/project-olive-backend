@@ -279,7 +279,7 @@ router.post("/:id/comment", parseIdParam, (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (cc:CommentCounter), (u:User{sessionUserID: $sessionUserID})
     MATCH (p:Post{id: $idPost})<-[:POSTED]-(u2:User)
-    WHERE EXISTS ((u)-[:FRIEND]-(u2)) OR p.type = "public" 
+    WHERE EXISTS ((u)-[:FRIEND]-(u2)) OR p.type = "public" OR EXISTS ((u)-[:POSTED]->(p))
     CALL apoc.atomic.add(cc,'next',1) YIELD oldValue AS next
     CREATE (u)-[:COMMENTED]->(c:Comment {id: next, date: datetime(), comment: $comment})-[:UNDER]->(p)
     RETURN u, c, p`,
