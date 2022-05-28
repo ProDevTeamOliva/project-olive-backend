@@ -1,4 +1,4 @@
 module.exports = {
   credentials: true,
-  origin: `http://localhost:${process.env.PORT || 3000}`,
+  origin: `http://localhost:${process.env.VITE_PORT || 3000}`,
 };
