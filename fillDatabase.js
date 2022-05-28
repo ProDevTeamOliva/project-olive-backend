@@ -269,8 +269,9 @@ const fillDatabase = async () => {
   process.exit();
 };
 
-
-const verify = () => neo4jDriver.verifyConnectivity()
-  .then(fillDatabase)
-  .catch(() => setTimeout(verify, 5000))
-verify()
+const verify = () =>
+  neo4jDriver
+    .verifyConnectivity()
+    .then(fillDatabase)
+    .catch(() => setTimeout(verify, 5000));
+verify();
