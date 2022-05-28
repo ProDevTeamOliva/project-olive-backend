@@ -8,6 +8,7 @@ axios.defaults.withCredentials = true;
 
 const SessionUser = require("./models/SessionUser");
 const { neo4jQueryWrapper } = require("./utils/utils");
+const neo4jDriver = require("./config/neo4jDriver");
 const store = require("./config/mongoStore");
 const fs = require("fs");
 const { picturesDir } = require("./utils/constants");
@@ -268,4 +269,9 @@ const fillDatabase = async () => {
   process.exit();
 };
 
-setTimeout(fillDatabase, 1000);
+const verify = () =>
+  neo4jDriver
+    .verifyConnectivity()
+    .then(fillDatabase)
+    .catch(() => setTimeout(verify, 5000));
+verify();
