@@ -191,7 +191,7 @@ const fillDatabase = async () => {
   console.log("Cleared Neo4J");
 
   fs.rmSync(picturesDir, { recursive: true });
-  if(!fs.existsSync(picturesDir)) {
+  if (!fs.existsSync(picturesDir)) {
     fs.mkdirSync(picturesDir);
   }
   console.log("Cleared pictures");
