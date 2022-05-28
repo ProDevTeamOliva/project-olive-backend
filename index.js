@@ -54,7 +54,7 @@ app.use(router);
 const errorHandler = require("./utils/errorHandler");
 app.use(errorHandler);
 
-const port = process.env.REACT_APP_EXPRESS_PORT || 5000;
+const port = process.env.VITE_EXPRESS_PORT || 5000;
 
 server.listen(port, () => {
   logger.info(`Server listening on port ${port}`);
