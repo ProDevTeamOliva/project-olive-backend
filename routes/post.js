@@ -10,6 +10,7 @@ const { parseIdQuery, parseIdParam } = require("../utils/middlewares");
 const { picturesDir } = require("../utils/constants");
 const dirPrefix = `/${picturesDir}/`;
 const { validatePicturesSize } = require("../utils/validators");
+const fs = require("fs/promises");
 
 router.get("/", parseIdQuery, (req, res, next) => {
   const tag = req.query.tag ?? "";
@@ -200,7 +201,10 @@ router.delete("/:id", parseIdParam, (req, res, next) => {
   const sessionUserID = req.user._id.toString();
 
   neo4jQueryWrapper(
-    "MATCH (pic:Picture)-[:ATTACHED]->(p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID}) DETACH DELETE p, pic RETURN p",
+    `MATCH (p:Post {id: $id})<-[:POSTED]-(u:User{sessionUserID:$sessionUserID})
+    OPTIONAL MATCH (pic:Picture)-[:ATTACHED]->(p)
+    DETACH DELETE p, pic
+    RETURN p`,
     {
       id,
       sessionUserID,
@@ -279,7 +283,7 @@ router.post("/:id/comment", parseIdParam, (req, res, next) => {
   neo4jQueryWrapper(
     `MATCH (cc:CommentCounter), (u:User{sessionUserID: $sessionUserID})
     MATCH (p:Post{id: $idPost})<-[:POSTED]-(u2:User)
-    WHERE EXISTS ((u)-[:FRIEND]-(u2)) OR p.type = "public" OR EXISTS ((u)-[:POSTED]->(p))
+    WHERE EXISTS ((u)-[:FRIEND]-(u2)) OR p.type = "public" OR u=u2
     CALL apoc.atomic.add(cc,'next',1) YIELD oldValue AS next
     CREATE (u)-[:COMMENTED]->(c:Comment {id: next, date: datetime(), comment: $comment})-[:UNDER]->(p)
     RETURN u, c, p`,
