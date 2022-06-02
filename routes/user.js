@@ -231,9 +231,10 @@ router.get("/", (req, res, next) => {
   const namePart = (req.query.namePart ?? "").toLowerCase();
 
   neo4jQueryWrapper(
-    `MATCH (u:User) ${
+    `MATCH (u:User)
+    WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl ${
       namePart.length
-        ? "WITH u, toLower(u.nameFirst) AS nf, toLower(u.nameLast) AS nl WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $namePart OR nl STARTS WITH $namePart OR nf STARTS WITH $namePart)"
+        ? "WHERE NOT u.sessionUserID=$sessionUserID AND (nf+' '+nl STARTS WITH $namePart OR nl STARTS WITH $namePart OR nf STARTS WITH $namePart)"
         : ""
     } RETURN u ORDER BY nf, nl, rand() LIMIT 15`,
     { namePart, sessionUserID }

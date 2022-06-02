@@ -1,7 +1,7 @@
 const { EntityError } = require("./errors");
 
 const validateString =
-  ({ min = 2, max = 60 } = {}) =>
+  ({ min = 1, max = 60 } = {}) =>
   (value) =>
     (value instanceof String || typeof value === "string") &&
     value.length >= min &&
