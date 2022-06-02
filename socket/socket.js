@@ -137,7 +137,7 @@ sio
         neo4jQueryWrapper(
           `MATCH (c:Conversation{id:$id}) OPTIONAL MATCH (c)<-[:SENT_TO]-(m:Message)<-[:SENT]-(u:User) ${
             idMessage !== undefined ? "WHERE m.id < $idMessage" : ""
-          } RETURN c, m, u ORDER BY m.date DESC LIMIT 15`,
+          } RETURN c, m, u ORDER BY m.date DESC LIMIT 60`,
           { id, idMessage }
         )
           .then(({ records }) => {
