@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test2": "docker-compose --file ../docker-compose-test.yml up -d && RUN_TEST=1 mocha && docker-compose --file ../docker-compose-test.yml down",
+    "test": "RUN_TEST=1 mocha",
     "start": "nodemon",
     "prod": "node index.js",
     "fill": "node fillDatabase.js",
@@ -28,8 +29,10 @@
     "axios": "^0.26.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
+    "mocha": "^10.0.0",
     "nodemon": "^2.0.15",
-    "prettier": "2.4.1"
+    "prettier": "2.4.1",
+    "supertest": "^6.2.3"
   },
   "dependencies": {
     "connect-mongo": "^4.6.0",
