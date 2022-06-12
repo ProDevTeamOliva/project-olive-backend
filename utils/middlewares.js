@@ -3,7 +3,15 @@ const neo4j = require("neo4j-driver");
 const { idRegexString } = require("./constants");
 const { NotFoundError } = require("./errors");
 
+const testLogIn = (req, res, next) => {
+  req.user = {};
+  req.user._id = req.body._id;
+  next();
+};
+
 const authenticationCheck = (req, res, next) => {
+  console.log(req.isAuthenticated());
+  console.log(req);
   if (!req.isAuthenticated()) {
     return next(new AuthenticationError("apiUnauthorizedError"));
   }
@@ -47,4 +55,5 @@ module.exports = {
   wrapMiddleware,
   parseIdParam,
   parseIdQuery,
+  testLogIn,
 };

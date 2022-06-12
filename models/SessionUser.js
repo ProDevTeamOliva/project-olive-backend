@@ -12,7 +12,7 @@ const passwordValidator = (password, cb) => {
   }
   cb();
 };
-const usernameField = "login";
+const usernameField = "username";
 sessionUserSchema.plugin(passportLocalMongoose, {
   usernameField,
   passwordValidator,

@@ -10,7 +10,7 @@ const passportLocal = require("passport-local");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const session = require("../config/session");
-require("../socket/socket");
+// require("../socket/socket");
 const { picturesDir } = require("../utils/constants");
 const SessionUser = require("../models/SessionUser");
 // const checkConnection = require("./checkConnection");
@@ -41,7 +41,8 @@ app.use(passport.session());
 passport.use(
   new passportLocal.Strategy(
     {
-      usernameField: "login",
+      usernameField: "username",
+      passwordField: "password"
     },
     SessionUser.authenticate()
   )

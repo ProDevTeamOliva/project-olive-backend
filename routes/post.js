@@ -60,6 +60,7 @@ router.get("/", parseIdQuery, (req, res, next) => {
 });
 
 router.post("/", (req, res, next) => {
+  console.log(req.user);
   const sessionUserID = req.user._id.toString();
   const { content, tags, pictures, type } = req.body;
 

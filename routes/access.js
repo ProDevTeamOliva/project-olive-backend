@@ -11,13 +11,13 @@ const {
 const { picturesDir, avatarDefault } = require("../utils/constants");
 
 router.post("/register", (req, res, next) => {
-  const { nameFirst, nameLast, login, password } = req.body;
+  const { nameFirst, nameLast, username, password } = req.body;
 
   if (!validateFields(next, { nameFirst, nameLast })) {
     return;
   }
 
-  SessionUser.register({ login }, password, (err, user) => {
+  SessionUser.register({ username }, password, (err, user) => {
     if (err) {
       err.message = `api${err.name}`;
       return next(err);
@@ -29,13 +29,14 @@ router.post("/register", (req, res, next) => {
       {
         nameFirst,
         nameLast,
-        login,
+        login: username,
         sessionUserID,
         avatar: `/${avatarDefault}`,
       }
     )
       .then(() =>
         res.status(201).json({
+          _id: sessionUserID,
           message: "apiRegisterSuccess",
         })
       )
