@@ -10,8 +10,6 @@ const testLogIn = (req, res, next) => {
 };
 
 const authenticationCheck = (req, res, next) => {
-  console.log(req.isAuthenticated());
-  console.log(req);
   if (!req.isAuthenticated()) {
     return next(new AuthenticationError("apiUnauthorizedError"));
   }

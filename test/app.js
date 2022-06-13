@@ -10,12 +10,8 @@ const passportLocal = require("passport-local");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const session = require("../config/session");
-// require("../socket/socket");
 const { picturesDir } = require("../utils/constants");
 const SessionUser = require("../models/SessionUser");
-// const checkConnection = require("./checkConnection");
-
-// checkConnection();
 
 const app = require("../config/express");
 
