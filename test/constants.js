@@ -1,7 +1,7 @@
 const testUser1 = {
   nameFirst: "test1",
   nameLast: "user1",
-  username: "testUser1",
+  login: "testUser1",
   password: "zaq1@WSX",
   sessionUserID: ""
 };
@@ -9,7 +9,7 @@ const testUser1 = {
 const testUser2 = {
   nameFirst: "test2",
   nameLast: "user2",
-  username: "testUser2",
+  login: "testUser2",
   password: "zaq1@WSX",
   sessionUserID: ""
 };
@@ -17,7 +17,7 @@ const testUser2 = {
 const testUser3 = {
   nameFirst: "test3",
   nameLast: "user3",
-  username: "testUser3",
+  login: "testUser3",
   password: "zaq1@WSX",
   sessionUserID: ""
 };
