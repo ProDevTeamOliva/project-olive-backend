@@ -4,7 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "testAuto": "../scripts/test-construct.sh && ../scripts/test-connection.sh && RUN_TEST=1 mocha --exit && ../scripts/test-destruct.sh",
+    "test": "RUN_TEST=1 mocha --exit && ../scripts/test-destruct.sh",
+    "testConstruct": "../scripts/test-construct.sh",
+    "testDestruct": "../scripts/test-destruct.sh",
+    "testConnection": "../scripts/test-connection.sh",
+    "testAutoWin": "..\\scripts\\test-construct.bat && ..\\scripts\\test-connection.bat && set RUN_TEST=1 mocha --exit && ..\\scripts\\test-destruct.bat",
+    "testWin": "set RUN_TEST=1 mocha --exit && ..\\scripts\\test-destruct.bat",
+    "testConstructWin": "..\\scripts\\test-construct.bat",
+    "testDestructWin": "..\\scripts\\test-destruct.bat",
+    "testConnectionWin": "..\\scripts\\test-connection.bat",
     "start": "nodemon",
     "prod": "node index.js",
     "fill": "node fillDatabase.js",
@@ -28,8 +37,10 @@
     "axios": "^0.26.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
+    "mocha": "^10.0.0",
     "nodemon": "^2.0.15",
-    "prettier": "2.4.1"
+    "prettier": "2.4.1",
+    "supertest": "^6.2.3"
   },
   "dependencies": {
     "connect-mongo": "^4.6.0",

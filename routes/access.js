@@ -36,6 +36,7 @@ router.post("/register", (req, res, next) => {
     )
       .then(() =>
         res.status(201).json({
+          _id: sessionUserID,
           message: "apiRegisterSuccess",
         })
       )

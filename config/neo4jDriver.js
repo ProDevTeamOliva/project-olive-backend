@@ -4,7 +4,10 @@ const logger = require("./logger");
 const username = process.env.NEO4J_USERNAME;
 const password = process.env.NEO4J_PASSWORD;
 const host = process.env.NEO4J_HOST || "localhost";
-const port = process.env.NEO4J_PORT_BOLT || 7687;
+const port =
+  process.env.RUN_TEST == 1
+    ? process.env.NEO4J_PORT_BOLT_TEST || 7688
+    : process.env.NEO4J_PORT_BOLT || 7687;
 
 const driver = neo4j.driver(
   `bolt://${host}:${port}`,
