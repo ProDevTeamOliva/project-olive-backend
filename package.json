@@ -20,7 +20,8 @@
     "delete": "rm -rf data logs",
     "deleteWin": "rmdir /s /q data logs || exit 0",
     "linkEnv": "rm -f .env ; ln -s ../project-olive-main/.env .env",
-    "linkEnvWin": "del /q .env & powershell start powershell -ArgumentList '-command Set-Location %cd% ; New-Item -ItemType SymbolicLink -Path .env -Target ../project-olive-main/.env' -Verb runAs"
+    "linkEnvWin": "del /q .env & powershell start powershell -ArgumentList '-command Set-Location %cd% ; New-Item -ItemType SymbolicLink -Path .env -Target ../project-olive-main/.env' -Verb runAs",
+    "perf": "ARTILLERY_DISABLE_TELEMETRY=true || set \"ARTILLERY_DISABLE_TELEMETRY=true\" && artillery run test/performance.test.yml"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
   },
   "homepage": "https://github.com/ProDevTeamOliva/project-olive-backend#readme",
   "devDependencies": {
+    "artillery": "2.0.0-16",
     "axios": "^0.26.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
