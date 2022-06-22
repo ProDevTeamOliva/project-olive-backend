@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "../scripts/test-construct.sh && ../scripts/test-connection.sh && RUN_TEST=1 mocha --exit && ../scripts/test-destruct.sh",
+    "testAuto": "../scripts/test-construct.sh && ../scripts/test-connection.sh && RUN_TEST=1 mocha --exit && ../scripts/test-destruct.sh",
+    "test": "RUN_TEST=1 mocha --exit && ../scripts/test-destruct.sh",
+    "testConstruct": "../scripts/test-construct.sh",
     "testDestruct": "../scripts/test-destruct.sh",
+    "testConnection": "../scripts/test-connection.sh",
     "start": "nodemon",
     "prod": "node index.js",
     "fill": "node fillDatabase.js",
