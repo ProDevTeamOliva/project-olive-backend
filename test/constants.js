@@ -54,5 +54,5 @@ module.exports = {
   testPostPublicNoImages,
   testPostFriendsNoImages,
   testComment,
-  testPicture
+  testPicture,
 };

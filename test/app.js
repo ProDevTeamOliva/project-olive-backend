@@ -37,7 +37,7 @@ app.use(passport.session());
 passport.use(
   new passportLocal.Strategy(
     {
-      usernameField: "login"
+      usernameField: "login",
     },
     SessionUser.authenticate()
   )
