@@ -369,7 +369,7 @@ router.delete("/picture/:id", (req, res, next) => {
   const sessionUserID = req.user._id.toString();
   const id = isNaN(req.params.id) ? undefined : parseInt(req.params.id);
 
-  if (!id) throw new NotFoundError("apiMyPictureDeleteError");
+  if (id == undefined) throw new NotFoundError("apiMyPictureDeleteError");
 
   neo4jQueryWrapper(
     "MATCH (:User {sessionUserID: $sessionUserID})-[:UPLOADED]->(p:Picture {id: $id}) WITH p, properties(p) AS pp WHERE NOT (p)-[:ATTACHED]->(:Post) DETACH DELETE p RETURN pp",
