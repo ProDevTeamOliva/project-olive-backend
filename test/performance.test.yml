@@ -1,14 +1,14 @@
 config:
   target: "http://localhost:5000"
   phases:
-    - duration: 10
-      arrivalRate: 50
+    - duration: 60
+      arrivalRate: 10
       name: Testing
   variables:
     password: "1aXaaaaa"
   processor: "./performanceUtils.js"
   http:
-    timeout: 30
+    timeout: 10
 scenarios:
   - name: "Users"
     flow:
