@@ -1,32 +1,14 @@
 config:
   target: "http://localhost:5000"
   phases:
-    - duration: 5
-      arrivalRate: 10
+    - duration: 10
+      arrivalRate: 50
       name: Testing
   variables:
     password: "1aXaaaaa"
   processor: "./performanceUtils.js"
-# before:
-#   flow:
-#     - loop:
-#         - function: "generateLogin"
-#         - post:
-#             url: "/register"
-#             json:
-#               login: "{{ login }}"
-#               password: "{{ password }}"
-#               nameFirst: "User"
-#               nameLast: "Test"
-#         - post:
-#             url: "/login"
-#             headers:
-#               X-Forwarded-Proto: "https"
-#             json:
-#               login: "{{ login }}"
-#               password: "{{ password }}"
-#             afterResponse: "afterResponseHandler"
-#       count: 10
+  http:
+    timeout: 30
 scenarios:
   - name: "Users"
     flow:
@@ -45,19 +27,3 @@ scenarios:
           json:
             login: "{{ login }}"
             password: "{{ password }}"
-          # afterResponse: "afterResponseHandler"
-  # - name: "Posts"
-  #   flow:
-  #     - loop:
-  #         - post:
-  #             url: "/post"
-  #             beforeRequest: "getRandomCookie"
-  #             headers:
-  #               X-Forwarded-Proto: "https"
-  #               Cookie: "{{ cookie }}"
-  #             json:
-  #               content: "hello there"
-  #               type: "public"
-  #               pictures: []
-  #               tags: []
-  #       count: 10

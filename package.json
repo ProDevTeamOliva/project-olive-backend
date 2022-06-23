@@ -21,7 +21,8 @@
     "deleteWin": "rmdir /s /q data logs || exit 0",
     "linkEnv": "rm -f .env ; ln -s ../project-olive-main/.env .env",
     "linkEnvWin": "del /q .env & powershell start powershell -ArgumentList '-command Set-Location %cd% ; New-Item -ItemType SymbolicLink -Path .env -Target ../project-olive-main/.env' -Verb runAs",
-    "perf": "ARTILLERY_DISABLE_TELEMETRY=true || set \"ARTILLERY_DISABLE_TELEMETRY=true\" && artillery run test/performance.test.yml"
+    "perf": "ARTILLERY_DISABLE_TELEMETRY=true || set \"ARTILLERY_DISABLE_TELEMETRY=true\" && artillery run -o logs/performance.json test/performance.test.yml",
+    "perfReport": "ARTILLERY_DISABLE_TELEMETRY=true || set \"ARTILLERY_DISABLE_TELEMETRY=true\" && artillery report logs/performance.json"
   },
   "repository": {
     "type": "git",
